@@ -1,0 +1,7 @@
+add_subdirectory(log)
+add_subdirectory(math)
+add_subdirectory(helpers)
+add_subdirectory(random)
+add_subdirectory(timer)
+add_subdirectory(vector)
+add_subdirectory(concepts)

@@ -1,0 +1,2 @@
+add_subdirectory(monster)
+add_subdirectory(generator)
