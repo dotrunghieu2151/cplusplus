@@ -25,7 +25,7 @@ private:
 
   void reallocateIfRequired();
   void reallocate(std::size_t capacity);
-  void validateIndex(int index) {
+  void validateIndex(int index) const {
     if (index < 0 || index > _size) {
       throw OutOfRangeException{"Index out of range"};
     }
@@ -89,12 +89,12 @@ public:
   const T& operator[](int index) const { return _elements[index]; };
 
   T& at(int index) {
-    validateIndex();
+    validateIndex(index);
     return _elements[index];
   };
 
   const T& at(int index) const {
-    validateIndex();
+    validateIndex(index);
     return _elements[index];
   };
 
@@ -115,3 +115,5 @@ public:
   }
   friend void swap(Vector<T>& a, Vector<T>& b) noexcept { a.swap(b); };
 };
+
+#include <vector.cpp>

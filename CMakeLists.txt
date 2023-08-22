@@ -7,7 +7,8 @@ project(bin)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+enable_testing()
 
 add_compile_options(-Wall)
 add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
@@ -25,3 +26,4 @@ add_compile_options(-stdlib=libc++)
 add_library(myLib "")
 add_subdirectory(lib)
 add_subdirectory(src)
+add_subdirectory(tests)
