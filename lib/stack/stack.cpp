@@ -45,8 +45,7 @@ template <typename T> void List<T>::remove_node(Node* node) {
   --_size;
 };
 
-template <typename T>
-typename List<T>::Node* List<T>::reverse_recursive_foward(Node* node) noexcept {
+template <typename T> typename List<T>::Node* List<T>::reverse_recursive_foward(Node* node) noexcept {
   if (node->_next == end()) {
     _sentinal._next = node;
     return node;
@@ -345,7 +344,7 @@ typename List<T>::iterator List<T>::erase(iterator first, iterator last) {
 
 template <typename T> void List<T>::reverse_iter() noexcept {
   Node* previous{&_sentinal};
-  for (Node* ptr{_sentinal._next}; ptr != end();) {
+  for (Node *ptr{_sentinal._next}; ptr != end();) {
     Node* temp{ptr->_next};
     ptr->_next = previous;
     ptr->_prev = temp;
