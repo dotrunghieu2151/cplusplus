@@ -28,8 +28,13 @@ public:
   using const_reference = const value&;
   using self = SimpleDeque<T>;
 
+  SimpleDeque() = default;
+
   SimpleDeque(std::size_t capacity)
-      : _capacity{capacity}, _elements{_allocator.allocate(capacity)} {
+      : _capacity{capacity}, _elements{_allocator.allocate(capacity)},
+        _head{_elements + static_cast<std::size_t>(std::round(capacity * 0.5)) -
+              1},
+        _tail{_head} {
     helpers::printf("SimpleDeque Ctor capacity");
   };
   SimpleDeque(std::initializer_list<T> list) : SimpleDeque(list.size() + 2) {
@@ -46,7 +51,7 @@ public:
 
   ~SimpleDeque() {
     helpers::printf("SimpleDeque detor");
-    for (pointer i{_head}; i < _tail; ++i) {
+    for (pointer i{_head}; i != _tail; ++i) {
       _allocator.destruct(i);
     };
     _allocator.deallocate(_elements);
@@ -95,8 +100,7 @@ public:
       shiftLeft(end(), 1);
       --_tail;
     } else if (is_full()) {
-      std::size_t newCapacity{static_cast<std::size_t>(
-          std::max(2, std::round(growRate * _capacity)))};
+      std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
     }
     _allocator.construct(_tail, element);
@@ -107,8 +111,7 @@ public:
       shiftLeft(end(), 1);
       --_tail;
     } else if (is_full()) {
-      std::size_t newCapacity{static_cast<std::size_t>(
-          std::max(2, std::round(growRate * _capacity)))};
+      std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
     }
     _allocator.construct(_tail, std::move(element));
@@ -117,11 +120,10 @@ public:
 
   void push_front(const_reference element) {
     if (_head == _elements && !is_full()) {
-      shiftRight(begin(), 1);
+      shiftRight(begin() - 1, 1);
       ++_head;
     } else if (is_full()) {
-      std::size_t newCapacity{static_cast<std::size_t>(
-          std::max(2, std::round(growRate * _capacity)))};
+      std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
     }
     --_head;
@@ -129,7 +131,7 @@ public:
   };
   void push_front(rvalue_reference element) {
     if (_head == _elements && !is_full()) {
-      shiftRight(begin(), 1);
+      shiftRight(begin() - 1, 1);
       ++_head;
     } else if (is_full()) {
       std::size_t newCapacity{getNewCapacity()};
@@ -154,14 +156,15 @@ public:
     if (!is_full()) {
       if (_tail + 1 <= _elements + _capacity) {
         shiftRight(pos._current - 1, 1);
-        _allocator.allocate(pos._current, element);
+        _allocator.construct(pos._current, element);
+        return {pos._current};
       } else {
         shiftLeft(pos._current, 1);
-        _allocator.allocate(pos._current - 1, element);
+        _allocator.construct(pos._current - 1, element);
+        return {pos._current - 1};
       }
-      return {pos._current - 1};
     } else {
-      std::size_t distance{pos._current - _head};
+      difference_type distance{pos._current - _head};
       std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
       return insert(iterator{_head + distance}, element);
@@ -172,14 +175,15 @@ public:
     if (!is_full()) {
       if (_tail + 1 <= _elements + _capacity) {
         shiftRight(pos._current - 1, 1);
-        _allocator.allocate(pos._current, std::move(element));
+        _allocator.construct(pos._current, std::move(element));
+        return {pos._current};
       } else {
         shiftLeft(pos._current, 1);
-        _allocator.allocate(pos._current - 1, std::move(element));
+        _allocator.construct(pos._current - 1, std::move(element));
+        return {pos._current - 1};
       }
-      return {pos._current - 1};
     } else {
-      std::size_t distance{pos._current - _head};
+      difference_type distance{pos._current - _head};
       std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
       return insert(iterator{_head + distance}, std::move(element));
@@ -188,14 +192,13 @@ public:
 
   template <typename InputIterator>
   iterator insert(iterator pos, InputIterator start, InputIterator end) {
-    std::size_t totalNewBlocks{
-        static_cast<std::size_t>(std::distance(start, end))};
-    std::size_t distance{pos._current - _head};
+    std::size_t totalNewBlocks{static_cast<std::size_t>(end - start)};
+    difference_type distance{pos._current - _head};
     if (size() + totalNewBlocks <= _capacity) {
       std::size_t freeBlocksAfterInsert{_capacity - (size() + totalNewBlocks)};
       std::size_t freeBlocksEachSideAfterInsert{
           static_cast<std::size_t>(std::round(freeBlocksAfterInsert * 0.5))};
-      std::size_t leftFreeBlocks{_head - _elements};
+      std::size_t leftFreeBlocks{static_cast<std::size_t>(_head - _elements)};
       std::size_t rightFreeBlocks(_capacity + _elements - _tail);
       std::size_t leftMoveDistance{
           leftFreeBlocks > freeBlocksEachSideAfterInsert
@@ -204,8 +207,10 @@ public:
       if (leftMoveDistance) {
         shiftLeft(pos._current, leftMoveDistance);
       }
-      std::size_t remainingFreeBlocks{freeBlocksAfterInsert - leftFreeBlocks +
-                                      leftMoveDistance};
+      std::size_t remainingFreeBlocks{
+          freeBlocksEachSideAfterInsert > leftMoveDistance
+              ? freeBlocksEachSideAfterInsert - leftMoveDistance
+              : 0};
       std::size_t rightMoveDistance{
           rightFreeBlocks > freeBlocksEachSideAfterInsert + remainingFreeBlocks
               ? rightFreeBlocks - freeBlocksEachSideAfterInsert -
@@ -216,7 +221,7 @@ public:
       }
       std::size_t i{};
       while (start != end) {
-        _allocator.allocate(_head + distance + i, *start);
+        _allocator.construct(_head + distance + i, *start);
         ++start;
         ++i;
       }
@@ -228,19 +233,32 @@ public:
     }
   };
 
+  iterator erase(iterator start, iterator end) {
+    difference_type distance{end - start};
+    for (iterator i{start}; i != end; ++i) {
+      _allocator.destruct(i._current);
+    }
+    for (pointer i{start._current}; i < _tail - distance; ++i) {
+      _allocator.construct(i, std::move(*(i + distance)));
+    }
+    _tail -= distance;
+    return {start._current};
+  };
+
   iterator erase(iterator pos) {
     _allocator.destruct(pos._current);
     for (pointer i{pos._current}; i < _tail - 1; ++i) {
-      _allocator.allocate(i, std::move(*(i + 1)));
+      _allocator.construct(i, std::move(*(i + 1)));
     }
-    return {pos._current + 1};
+    --_tail;
+    return {pos._current};
   };
 
-  reference front() { return _elements[_head]; };
-  reference front() const { return _elements[_head]; };
+  reference front() { return *_head; };
+  reference front() const { return *_head; };
 
-  reference back() { return _elements[_tail - 1]; };
-  reference back() const { return _elements[_tail - 1]; };
+  reference back() { return *(_tail - 1); };
+  reference back() const { return *(_tail - 1); };
 
   pointer data() { return _elements; };
   const pointer data() const { return _elements; };
@@ -296,18 +314,19 @@ private:
   };
 
   std::size_t getNewCapacity(std::size_t minCapacity = 2) const {
-    return static_cast<std::size_t>(
-        std::max(minCapacity, std::round(growRate * _capacity)));
+    return std::max(minCapacity,
+                    static_cast<std::size_t>(std::round(growRate * _capacity)));
   }
 
   void reallocate(std::size_t capacity) {
     helpers::printf("Reallocating with ", capacity);
     pointer newSpace{_allocator.allocate(capacity)};
     std::size_t totalSpareBlocks{capacity - size()};
-    pointer newHead{newSpace + std::round(totalSpareBlocks * 0.5)};
+    pointer newHead{newSpace + static_cast<std::size_t>(
+                                   std::round(totalSpareBlocks * 0.5))};
     pointer newTail{newHead};
     for (pointer i{_head}; i < _tail; ++i) {
-      _allocator.allocate(newTail, std::move(*i));
+      _allocator.construct(newTail, std::move(*i));
       _allocator.destruct(i);
       ++newTail;
     }

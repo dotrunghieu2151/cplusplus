@@ -8,6 +8,24 @@ project(bin)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
+# install external package from git START
+include(FetchContent) 
+
+set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
+
+FetchContent_Declare(
+  tracyProfiler
+  GIT_REPOSITORY https://github.com/wolfpld/tracy
+  GIT_TAG "v0.9.1"
+  GIT_SHALLOW TRUE
+  GIT_PROGRESS ON
+  SYSTEM
+)
+
+FetchContent_MakeAvailable(tracyProfiler)
+
+# install external package from git END
+
 enable_testing()
 
 add_compile_options(-Wall)

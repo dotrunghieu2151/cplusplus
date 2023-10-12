@@ -37,6 +37,7 @@ target_link_libraries(simple-deque-test
   PRIVATE 
     GTest::gtest_main
     myLib
+    Tracy::TracyClient
 )
 
 add_test(circular-buffer-gtest circular-buffer-test)
