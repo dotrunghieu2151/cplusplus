@@ -265,11 +265,11 @@ public:
 
   reference at(std::size_t index) {
     validateIndex(index);
-    return *(_head + index);
+    return (*this)[index];
   };
   reference at(std::size_t index) const {
     validateIndex(index);
-    return *(_head + index);
+    return (*this)[index];
   };
 
   reference operator[](std::size_t index) { return *(_head + index); };
@@ -296,7 +296,7 @@ public:
     swap(_tail, other._tail);
   }
 
-  void friend swap(self& e1, self& e2) { e1.swap(e2); };
+  void friend swap(self& e1, self& e2) noexcept { e1.swap(e2); };
 
 private:
   Allocator _allocator{};
@@ -305,10 +305,8 @@ private:
   pointer _head{};
   pointer _tail{};
 
-  void validateIndex(int index) const {
-    difference_type lower_bound{_head - _elements};
-    difference_type upper_bound{_tail - _elements};
-    if (index < lower_bound || index > upper_bound) {
+  void validateIndex(std::size_t index) const {
+    if (index >= size()) {
       throw OutOfRangeException{"Index out of range"};
     }
   };
@@ -376,8 +374,9 @@ public:
     using iterator_category = iterator_category;
     using difference_type = difference_type;
 
-  private:
     Iterator() = default;
+
+  private:
     Iterator(pointer current) : _current{current} {};
     pointer _current;
 
@@ -421,7 +420,7 @@ public:
       return *this;
     }
 
-    Iterator* operator-=(int index) {
+    Iterator& operator-=(int index) {
       _current -= index;
       return *this;
     }
@@ -436,7 +435,8 @@ public:
     }
 
     difference_type operator-(const Iterator& other) const {
-      return _current - other._current;
+      return _current > other._current ? _current - other._current
+                                       : other._current - _current;
     }
 
     bool operator==(const Iterator& other) const {

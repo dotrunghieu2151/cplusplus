@@ -26,7 +26,7 @@ private:
   void reallocateIfRequired();
   void reallocate(std::size_t capacity);
   void validateIndex(int index) const {
-    if (index < 0 || index > _size) {
+    if (index < 0 || index >= _size) {
       throw OutOfRangeException{"Index out of range"};
     }
   };

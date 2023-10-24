@@ -10,10 +10,18 @@ FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
 # tests
+add_executable(vector-test vector.test.cpp)
 add_executable(list-test list.test.cpp)
 add_executable(array-test array.test.cpp)
 add_executable(circular-buffer-test circular-buffer.test.cpp)
 add_executable(simple-deque-test simple-deque.test.cpp)
+add_executable(deque-test deque.test.cpp)
+
+target_link_libraries(vector-test 
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
 
 target_link_libraries(list-test 
   PRIVATE 
@@ -40,7 +48,16 @@ target_link_libraries(simple-deque-test
     Tracy::TracyClient
 )
 
+target_link_libraries(deque-test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+    Tracy::TracyClient
+)
+
+add_test(vector-gtest vector-test)
 add_test(circular-buffer-gtest circular-buffer-test)
 add_test(list_gtest list-test)
 add_test(array_gtest array-test)
 add_test(simple_deque_gtest simple-deque-test)
+add_test(deque_gtest deque-test)

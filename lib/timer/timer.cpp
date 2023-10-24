@@ -1,12 +1,12 @@
 #include <chrono>
+#include <iostream>
 #include <timer.hpp>
 
-void Timer::reset()
-{
-  m_begin = Clock::now();
-}
+Timer::Timer() : m_begin{Clock::now()} { std::cout << "Timer starts ! \n"; }
+Timer::~Timer() { std::cout << "Timer ends: " << elapsed() << "\n"; }
 
-double Timer::elapsed() const
-{
+void Timer::reset() { m_begin = Clock::now(); }
+
+double Timer::elapsed() const {
   return std::chrono::duration_cast<Second>(Clock::now() - m_begin).count();
 }

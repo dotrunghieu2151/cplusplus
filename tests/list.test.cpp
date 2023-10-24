@@ -3,6 +3,8 @@
 #include <helpers.hpp>
 #include <iterator>
 #include <list.hpp>
+#include <list>
+#include <timer.hpp>
 #include <utility>
 
 using TestObj = helpers::Test;
@@ -222,7 +224,7 @@ TEST_F(ListTest, reverseIter) {
   l1.reverse_iter();
   auto size = l1.size();
   for (std::size_t i{0}; i < size; ++i) {
-    EXPECT_EQ(l1[i].num(), lBeforeReverse[(size - 1)- i].num());
+    EXPECT_EQ(l1[i].num(), lBeforeReverse[(size - 1) - i].num());
   }
 }
 
@@ -231,6 +233,22 @@ TEST_F(ListTest, reverseRecursion) {
   l1.reverse_recursive();
   auto size = l1.size();
   for (std::size_t i{0}; i < size; ++i) {
-    EXPECT_EQ(l1[i].num(), lBeforeReverse[(size - 1)- i].num());
+    EXPECT_EQ(l1[i].num(), lBeforeReverse[(size - 1) - i].num());
+  }
+}
+
+TEST(PerfTest, StdList) {
+  Timer t{};
+  std::list<TestObj> l1{};
+  for (int i{}; i < 100000; ++i) {
+    l1.push_back(TestObj{i});
+  }
+}
+
+TEST(PerfTest, CustomList) {
+  Timer t{};
+  List<TestObj> l1{};
+  for (int i{}; i < 100000; ++i) {
+    l1.push_back(TestObj{i});
   }
 }

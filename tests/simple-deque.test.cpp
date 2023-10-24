@@ -4,6 +4,7 @@
 #include <helpers.hpp>
 #include <simple-deque.hpp>
 #include <thread>
+#include <timer.hpp>
 #include <tracy/Tracy.hpp>
 
 using TestObj = helpers::Test;
@@ -202,3 +203,11 @@ TEST_F(SimpleDequeTest, EraseMany) {
   EXPECT_EQ(q[0].num(), 0);
   EXPECT_EQ(q[1].num(), 4);
 };
+
+TEST_F(SimpleDequeTest, PerfTest) {
+  Timer timer{};
+  SimpleDeque<TestObj> q(10000);
+  for (int i{}; i < 10000; ++i) {
+    q.push_back(TestObj{i});
+  }
+}

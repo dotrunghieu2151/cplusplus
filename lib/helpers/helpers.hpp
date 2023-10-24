@@ -1,6 +1,18 @@
 #pragma once
-#include "iostream"
+#include <iostream>
 
+#define HELPER_DEBUG 0
+
+#if HELPER_DEBUG == 1
+#define HELPER_DEBUG_MS(mes)                                                   \
+  do {                                                                         \
+    helpers::printf(mes);                                                      \
+  } while (0)
+#else
+#define HELPER_DEBUG_MS(mes)                                                   \
+  do {                                                                         \
+  } while (0)
+#endif
 namespace helpers {
 using std::cout;
 using std::endl;
@@ -9,9 +21,9 @@ using std::endl;
 consteval auto compileTime(auto value) { return value; }
 
 template <typename... Args> void printf(Args&... args) {
-  ((cout << args << ", "), ...) << endl;
+  ((cout << args << ", "), ...) << "\n";
 }
-template <typename Last> void printf(Last& last) { cout << last << endl; }
+template <typename Last> void printf(Last& last) { cout << last << "\n"; }
 
 class Test {
 private:
@@ -21,23 +33,23 @@ private:
 public:
   Test() = default;
   Test(int num) : _num{num}, _ptr{new int{5}} {
-    helpers::printf("Constructor called");
+    HELPER_DEBUG_MS("Constructor called");
   }
   ~Test() {
-    helpers::printf("Destructor called");
+    HELPER_DEBUG_MS("Destructor called");
     delete _ptr;
     _ptr = nullptr;
   }
 
   Test(const Test& copy) : _num{copy._num} {
-    helpers::printf("COPY Ctor");
+    HELPER_DEBUG_MS("COPY Ctor");
     if (copy._ptr) {
       _ptr = new int{*copy._ptr};
     }
   }
 
   Test& operator=(const Test& copy) {
-    helpers::printf("COPY assignment");
+    HELPER_DEBUG_MS("COPY assignment");
     Test tempCopy{copy};
     _num = copy._num;
     std::swap(_ptr, tempCopy._ptr);
@@ -45,12 +57,12 @@ public:
   }
 
   Test(Test&& move) : _num{move._num}, _ptr{move._ptr} {
-    helpers::printf("MOVE Ctor");
+    HELPER_DEBUG_MS("MOVE Ctor");
     move._ptr = nullptr;
   }
 
   Test& operator=(Test&& move) {
-    helpers::printf("MOVE ASSIGNMENT");
+    HELPER_DEBUG_MS("MOVE ASSIGNMENT");
     Test tmpMove{std::move(move)};
     std::swap(_ptr, tmpMove._ptr);
     std::swap(_num, tmpMove._num);
