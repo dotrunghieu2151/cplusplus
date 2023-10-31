@@ -2,166 +2,64 @@
 
 #include <concept.hpp>
 #include <cstddef>
+#include <deque.hpp>
 #include <helpers.hpp>
-#include <initializer_list>
 #include <string>
 #include <utility>
 
-template <typename T> class List {
+template <typename T, concepts::IsStackContainer Container = Deque<T>>
+class Stack {
 
-  class OutOfRangeException : public std::exception {
-  private:
-    std::string message;
-
-  public:
-    OutOfRangeException(std::string msg) : message{msg} {}
-  };
-
-private:
-  struct Node {
-  public:
-    Node* _next{nullptr};
-    Node* _prev{nullptr};
-
-    Node() = default;
-    Node(Node* prev, Node* next) : _next{next}, _prev{prev} {
-      _next->_prev = this;
-      _prev->_next = this;
-    };
-
-    virtual ~Node() = default;
-  };
-
-  struct DataNode : public Node {
-
-  public:
-    T _data{};
-
-    DataNode() = default;
-    DataNode(const T& data) : _data{data} {};
-    DataNode(T&& data) : _data{std::move(data)} {};
-  };
+public:
+  using container_type = Container;
+  using value_type = typename Container::value;
+  using reference = typename Container::reference;
+  using rvalue_reference = typename Container::rvalue_reference;
 
 private:
-  std::size_t _size{};
-  // _sentinal._next is head, _sentinal._prev is tail
-  Node _sentinal{};
-
-  void link_node_right(Node& newNode, Node& nodeToLinkTo);
-  void link_node_left(Node& newNode, Node& nodeToLinkTo);
-  void unlink_node(Node& node);
-  void remove_node(Node* node);
-  T& get_node_at_index(std::size_t index) const {
-    if (index == _size - 1) {
-      return static_cast<DataNode*>(_sentinal._prev)->_data;
-    } else if (index == 0) {
-      return static_cast<DataNode*>(_sentinal._next)->_data;
-    } else {
-      Node* tmp{_sentinal._next};
-      for (std::size_t i{0}; i < index; ++i) {
-        tmp = tmp->_next;
-      };
-      return static_cast<DataNode*>(tmp)->_data;
-    }
-  };
-  Node* reverse_recursive_foward(Node* node) noexcept;
+  using self = Stack<T, Container>;
+  container_type _container{};
 
 public:
   /* Constructors */
-  List();
-  List(std::size_t capacity, T defaultValue = T());
+  Stack() = default;
+  Stack(const container_type& container) : _container{container} {};
+  Stack(container_type&& container) : _container{std::move(container)} {};
 
-  template <typename InputIterator>
-  List(InputIterator begin, InputIterator end);
-  List(std::initializer_list<T> list);
+  ~Stack() = default;
 
-  ~List();
-
-  List(const List<T>& copy);
-  List<T>& operator=(const List<T>& copy);
-
-  List(List<T>&& move) noexcept;
-  List<T>& operator=(List<T>&& move) noexcept;
-
-  /* Element access */
-  T& operator[](std::size_t index) { return get_node_at_index(index); };
-  const T& operator[](std::size_t index) const {
-    return get_node_at_index(index);
+  Stack(const self& copy) : Stack(copy._container){};
+  self& operator=(const self& copy) {
+    self tmp{copy};
+    tmp.swap(*this);
+    return *this;
   };
 
-  T& at(std::size_t index) {
-    if (index > _size) {
-      throw OutOfRangeException("Index out of range");
-    }
-    return get_node_at_index(index);
+  Stack(self&& move) noexcept : Stack(std::move(move._container)){};
+  self& operator=(self&& move) noexcept {
+    self tmp{std::move(move)};
+    tmp.swap(*this);
+    return *this;
   };
 
-  const T& at(std::size_t index) const {
-    if (index > _size) {
-      throw OutOfRangeException("Index out of range");
-    }
-    return get_node_at_index(index);
-  };
+  reference top() noexcept { return _container.back(); }
 
-  /* Iterators */
-  class Iterator;
-  class ReverseIterator;
+  reference top() const noexcept { return _container.back(); }
 
-  using iterator = Iterator;
-  using reverse_iterator = ReverseIterator;
+  bool empty() const noexcept { return _container.empty(); }
 
-  iterator begin();
-  iterator end();
+  std::size_t size() const noexcept { return _container.size(); }
 
-  iterator begin() const;
-  iterator end() const;
-
-  iterator cbegin() const;
-  iterator cend() const;
-
-  reverse_iterator rbegin();
-  reverse_iterator rend();
-
-  reverse_iterator rbegin() const;
-  reverse_iterator rend() const;
-
-  reverse_iterator crbegin() const;
-  reverse_iterator crend() const;
-
-  void swap(List<T>& copy) noexcept {
+  void swap(self& other) noexcept {
     using std::swap;
-    // order of execution is important to break the link, dont change the order
-    swap(_sentinal._next->_prev, copy._sentinal._next->_prev);
-    swap(_sentinal._next, copy._sentinal._next);
-
-    swap(_sentinal._prev->_next, copy._sentinal._prev->_next);
-    swap(_sentinal._prev, copy._sentinal._prev);
-
-    swap(_size, copy._size);
+    swap(_container, other._container);
   }
-  friend void swap(List<T>& a, List<T>& b) noexcept { a.swap(b); };
 
-  std::size_t size() const { return _size; }
+  void friend swap(self& o1, self& o2) noexcept { return o1.swap(o2); }
 
-  void pop_back();
-  void pop_front();
+  void push(const reference ele) { _container.push_back(ele); }
 
-  void push_back(const T& element);
-  void push_back(T&& element);
-  void push_front(const T& element);
-  void push_front(T&& element);
+  void push(rvalue_reference ele) { _container.push_back(std::move(ele)); }
 
-  iterator insert(iterator pos, const T& element);
-  iterator insert(iterator pos, T&& element);
-
-  template <typename InputIterator>
-  iterator insert(iterator pos, InputIterator begin, InputIterator end);
-
-  iterator erase(iterator pos);
-  iterator erase(iterator first, iterator last);
-
-  void reverse_iter() noexcept;
-  void reverse_recursive() noexcept;
+  value_type pop() { return _container.pop_back(); }
 };
-
-#include <list.cpp>

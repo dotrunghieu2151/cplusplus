@@ -243,7 +243,10 @@ template <typename T> void Vector<T>::reallocate(std::size_t capacity) {
 
   ::operator delete(newArr);
 }
-template <typename T> void Vector<T>::pop_back() { _elements[--_size].~T(); }
+template <typename T> T Vector<T>::pop_back() {
+  T ele{std::move(_elements[--_size])};
+  return ele;
+}
 
 template <typename T>
 template <typename... Args>

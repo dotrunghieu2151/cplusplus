@@ -15,4 +15,19 @@ concept TypeIn =
 template <typename T>
 concept IsIterator = requires(T a) { typename T::iterator_category; };
 
+template <typename T>
+concept IsStackContainer = requires(T container, const typename T::reference v,
+                                    typename T::rvalue_reference vr) {
+  typename T::value;
+  typename T::reference;
+  typename T::rvalue_reference;
+
+  container.push_back(v);
+  container.push_back(vr);
+  container.pop_back();
+  container.size();
+  container.back();
+  container.empty();
+};
+
 } // namespace concepts

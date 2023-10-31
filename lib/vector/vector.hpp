@@ -9,6 +9,11 @@
 template <typename T> class Vector {
   inline static constexpr double growRate{1.5};
 
+public:
+  using value = T;
+  using reference = T&;
+  using rvalue_reference = T&&;
+
   class OutOfRangeException : public std::exception {
   private:
     std::string message;
@@ -73,7 +78,7 @@ public:
   void clear();
   void push_back(T&& val);
   void push_back(const T& val);
-  void pop_back();
+  value pop_back();
 
   template <typename... Args> void emplace_back(Args&&... args);
   void insert(int insertIndex, const T& ele);

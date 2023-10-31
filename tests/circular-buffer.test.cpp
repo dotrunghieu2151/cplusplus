@@ -89,6 +89,24 @@ TEST_F(CircularBufferTest, Iterator) {
     ++index;
   }
   EXPECT_EQ(buff2.size(), index);
+
+  CircularBuffer<TestObj, 5> buff3{TestObj{0}};
+  buff3.pop_front();
+  buff3.pop_front();
+  buff3.push_back(TestObj{0});
+  index = 0;
+  for (int i{}; i < 4; ++i) {
+    buff3[i] = TestObj{i};
+  }
+  EXPECT_EQ(buff3.size(), 4);
+
+  EXPECT_EQ(buff3.begin() + buff3.size() == buff3.end(), true);
+  EXPECT_EQ(buff3.end() - buff3.size() == buff3.begin(), true);
+  EXPECT_EQ(buff3.begin() + 1 == buff3.end() - (buff3.size() - 1), true);
+  buff3.pop_front();
+  EXPECT_EQ(buff3.begin() + buff3.size() == buff3.end(), true);
+  EXPECT_EQ(buff3.end() - buff3.size() == buff3.begin(), true);
+  EXPECT_EQ(buff3.begin() + 1 == buff3.end() - (buff3.size() - 1), true);
 }
 
 TEST_F(CircularBufferTest, PushPop) {

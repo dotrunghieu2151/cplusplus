@@ -4,7 +4,7 @@
       "name": "C/C++: make launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/tests/vector-test",
+      "program": "${workspaceFolder}/build/tests/stack-test",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/build",

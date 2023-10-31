@@ -16,6 +16,7 @@ add_executable(array-test array.test.cpp)
 add_executable(circular-buffer-test circular-buffer.test.cpp)
 add_executable(simple-deque-test simple-deque.test.cpp)
 add_executable(deque-test deque.test.cpp)
+add_executable(stack-test stack.test.cpp)
 
 target_link_libraries(vector-test 
   PRIVATE 
@@ -55,9 +56,17 @@ target_link_libraries(deque-test
     Tracy::TracyClient
 )
 
+target_link_libraries(stack-test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+    Tracy::TracyClient
+)
+
 add_test(vector-gtest vector-test)
 add_test(circular-buffer-gtest circular-buffer-test)
 add_test(list_gtest list-test)
 add_test(array_gtest array-test)
 add_test(simple_deque_gtest simple-deque-test)
 add_test(deque_gtest deque-test)
+add_test(stack_gtest stack-test)

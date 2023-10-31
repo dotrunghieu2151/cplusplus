@@ -10,6 +10,19 @@
 #include <string>
 #include <utility>
 
+#define SIMPLE_DEQUE_DEBUG 0
+
+#if SIMPLE_DEQUE_DEBUG == 1
+#define SIMPLE_DEQUE_DEBUG_MS(mes)                                             \
+  do {                                                                         \
+    helpers::printf(mes);                                                      \
+  } while (0)
+#else
+#define SIMPLE_DEQUE_DEBUG_MS(mes)                                             \
+  do {                                                                         \
+  } while (0)
+#endif
+
 template <typename T, typename Allocator = Allocator<T>> class SimpleDeque {
   inline static constexpr double growRate{2};
 
@@ -35,10 +48,10 @@ public:
         _head{_elements + static_cast<std::size_t>(std::round(capacity * 0.5)) -
               1},
         _tail{_head} {
-    helpers::printf("SimpleDeque Ctor capacity");
+    SIMPLE_DEQUE_DEBUG_MS("SimpleDeque Ctor capacity");
   };
   SimpleDeque(std::initializer_list<T> list) : SimpleDeque(list.size() + 2) {
-    helpers::printf("SimpleDeque list ctor");
+    // helpers::printf("SimpleDeque list ctor");
     std::size_t totalSpareBlocks{_capacity - list.size()};
     _head = _elements +
             static_cast<std::size_t>(std::round(totalSpareBlocks * 0.5));
@@ -50,7 +63,7 @@ public:
   };
 
   ~SimpleDeque() {
-    helpers::printf("SimpleDeque detor");
+    SIMPLE_DEQUE_DEBUG_MS("SimpleDeque Dtor");
     for (pointer i{_head}; i != _tail; ++i) {
       _allocator.destruct(i);
     };
@@ -62,7 +75,7 @@ public:
         _elements{_allocator.allocate(_capacity)},
         _head{_elements + (other._head - other._elements)},
         _tail{_elements + (other._tail - other._elements)} {
-    helpers::printf("SimpleDeque copy ctor");
+    SIMPLE_DEQUE_DEBUG_MS("SimpleDeque Copy Ctor");
     for (pointer i{other._head}, ele{_head}; i < other._tail; ++i, ++ele) {
       _allocator.construct(ele, *i);
     };
@@ -71,7 +84,7 @@ public:
   SimpleDeque(self&& other) noexcept
       : _allocator{std::move(other._allocator)}, _capacity{other._capacity},
         _elements{other._elements}, _head{other._head}, _tail{other._tail} {
-    helpers::printf("SimpleDeque move ctor");
+    SIMPLE_DEQUE_DEBUG_MS("SimpleDeque Move Ctor");
     other._capacity = 0;
     other._head = nullptr;
     other._tail = nullptr;
@@ -79,14 +92,14 @@ public:
   };
 
   self& operator=(const self& other) {
-    helpers::printf("SimpleDeque copy operator");
+    SIMPLE_DEQUE_DEBUG_MS("SimpleDeque Copy Operator");
     self copy{other};
     copy.swap(*this);
     return *this;
   };
 
   self& operator=(self&& other) noexcept {
-    helpers::printf("SimpleDeque move operator");
+    SIMPLE_DEQUE_DEBUG_MS("SimpleDeque Move Operator");
     self move{std::move(other)};
     move.swap(*this);
     return *this;
@@ -102,6 +115,7 @@ public:
     } else if (is_full()) {
       std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
+      return push_back(element);
     }
     _allocator.construct(_tail, element);
     ++_tail;
@@ -113,6 +127,7 @@ public:
     } else if (is_full()) {
       std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
+      return push_back(std::move(element));
     }
     _allocator.construct(_tail, std::move(element));
     ++_tail;
@@ -125,6 +140,7 @@ public:
     } else if (is_full()) {
       std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
+      return push_front(element);
     }
     --_head;
     _allocator.construct(_head, element);
@@ -136,6 +152,7 @@ public:
     } else if (is_full()) {
       std::size_t newCapacity{getNewCapacity()};
       reallocate(newCapacity);
+      return push_front(std::move(element));
     }
     --_head;
     _allocator.construct(_head, std::move(element));
@@ -317,7 +334,7 @@ private:
   }
 
   void reallocate(std::size_t capacity) {
-    helpers::printf("Reallocating with ", capacity);
+    // helpers::printf("Reallocating with ", capacity);
     pointer newSpace{_allocator.allocate(capacity)};
     std::size_t totalSpareBlocks{capacity - size()};
     pointer newHead{newSpace + static_cast<std::size_t>(

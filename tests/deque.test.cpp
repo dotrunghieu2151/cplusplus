@@ -1,9 +1,27 @@
+#include <chrono>
 #include <cstddef>
 #include <deque.hpp>
+#include <deque>
 #include <gtest/gtest.h>
 #include <helpers.hpp>
+#include <iostream>
+#include <timer.hpp>
+#include <tracy/Tracy.hpp>
+
+#define TRACY_NO_EXIT 1
 
 using TestObj = helpers::Test;
+
+// void* operator new(std ::size_t count) {
+//   auto ptr = malloc(count);
+//   TracyAlloc(ptr, count);
+//   return ptr;
+// }
+// void operator delete(void* ptr) noexcept {
+//   TracyFree(ptr);
+//   free(ptr);
+// }
+
 class ContainerTest : public ::testing::Test {
 public:
   Deque<TestObj> _container;
@@ -19,7 +37,9 @@ public:
   }
 
 protected:
-  void SetUp() override{};
+  void SetUp() override{
+      // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  };
 };
 
 TEST_F(ContainerTest, PushBack) {
@@ -146,7 +166,7 @@ TEST_F(ContainerTest, PushFrontExtends) {
 }
 
 TEST_F(ContainerTest, PushFront) {
-  Deque<TestObj> c(15);
+  Deque<TestObj> c(2);
   for (int i{14}; i >= 0; --i) {
     c.push_front(TestObj{i});
   }
@@ -160,7 +180,7 @@ TEST_F(ContainerTest, PushFront) {
 }
 
 TEST_F(ContainerTest, PopBack) {
-  Deque<TestObj> c(15);
+  Deque<TestObj> c(2);
   for (int i{14}; i >= 0; --i) {
     c.push_front(TestObj{i});
   }
@@ -177,7 +197,7 @@ TEST_F(ContainerTest, PopBack) {
 }
 
 TEST_F(ContainerTest, PopFront) {
-  Deque<TestObj> c(15);
+  Deque<TestObj> c(2);
   for (int i{}; i < 15; ++i) {
     c.push_back(TestObj{i});
   }
@@ -190,4 +210,30 @@ TEST_F(ContainerTest, PopFront) {
     EXPECT_EQ(ele.num(), index);
     --index;
   }
+}
+
+TEST(PerfTest, StdDeque) {
+  // ZoneScopedN("TEST StdDeque");
+  Timer timer{};
+  std::deque<TestObj> queue{};
+  for (int i{}; i < 50000; ++i) {
+    queue.push_back(TestObj{i});
+  }
+  for (int i{}; i < 50000; ++i) {
+    queue.push_front(TestObj{i});
+  }
+  EXPECT_EQ(queue.size(), 100000);
+}
+
+TEST(PerfTest, CustomDeque) {
+  // ZoneScopedN("TEST CustomDeque");
+  Timer timer{};
+  Deque<TestObj> queue{};
+  for (int i{}; i < 50000; ++i) {
+    queue.push_back(TestObj{i});
+  }
+  for (int i{}; i < 50000; ++i) {
+    queue.push_front(TestObj{i});
+  }
+  EXPECT_EQ(queue.size(), 100000);
 }

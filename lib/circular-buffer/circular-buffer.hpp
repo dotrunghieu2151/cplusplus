@@ -9,6 +9,19 @@
 #include <utility>
 #include <vector.hpp>
 
+#define CIRCULAR_BUFFER_DEBUG 0
+
+#if CIRCULAR_BUFFER_DEBUG == 1
+#define CIRCULAR_BUFFER_DEBUG_MS(mes)                                          \
+  do {                                                                         \
+    helpers::printf(mes);                                                      \
+  } while (0)
+#else
+#define CIRCULAR_BUFFER_DEBUG_MS(mes)                                          \
+  do {                                                                         \
+  } while (0)
+#endif
+
 template <typename T, std::size_t N, typename Allocator = Allocator<T>>
 class CircularBuffer {
 public:
@@ -26,7 +39,7 @@ public:
 
 public:
   CircularBuffer() : _elements{_allocator.allocate(N)} {
-    helpers::printf("CircularBuffer Ctor default");
+    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Ctor default");
   };
   CircularBuffer(const_reference default_value) : CircularBuffer() {
     for (std::size_t i{0}; i < N; ++i) {
@@ -35,11 +48,11 @@ public:
     _head = 0;
     _tail = 0;
     _size = N;
-    helpers::printf("CircularBuffer Ctor default value");
+    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Ctor default value");
   };
 
   ~CircularBuffer() {
-    helpers::printf("CircularBuffer Dtor");
+    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Dtor");
     while (!empty()) {
       pop_front();
     }
@@ -51,26 +64,26 @@ public:
     for (const_reference i : other) {
       push_back(i);
     }
-    helpers::printf("CircularBuffer Copy Ctor");
+    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Copy Ctor");
   };
   CircularBuffer(self&& other)
       : _allocator{std::move(other._allocator)}, _head{other._head},
         _tail{other._tail}, _elements{other._elements}, _size{other._size} {
-    helpers::printf("CircularBuffer Move Ctor");
     other._elements = nullptr;
     other._head = 0;
     other._tail = 0;
     other._size = 0;
+    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Move Ctor");
   };
 
   self& operator=(const self& other) {
-    helpers::printf("CircularBuffer Copy Operator");
+    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Copy Operator");
     self copy{other};
     copy.swap(*this);
     return *this;
   };
   self& operator=(self&& other) {
-    helpers::printf("CircularBuffer Move Operator");
+    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Move Operator");
     self moved{std::move(other)};
     moved.swap(*this);
     return *this;
@@ -167,8 +180,8 @@ public:
   }
 
   T pop_back() {
-    T value{std::move(_elements[size() - 1])};
     _tail = _tail == 0 ? N - 1 : _tail - 1;
+    T value{std::move(_elements[_tail])};
     --_size;
     return value;
   }
@@ -232,7 +245,7 @@ public:
         _current = 0;
       }
       if (_steps == _buffer->size()) {
-        _steps = 1;
+        _steps = 0;
       } else {
         ++_steps;
       }
@@ -253,7 +266,7 @@ public:
         --_current;
       }
       if (_steps == 0) {
-        _steps = _buffer->size() - 1;
+        _steps = _buffer->size();
       } else {
         --_steps;
       }
@@ -277,16 +290,16 @@ public:
       return other + index;
     }
 
-    Iterator& operator+=(const difference_type index) {
-      if (_current + index >= N) {
-        _current += index - N;
+    Iterator& operator+=(difference_type distance) {
+      if (_current + distance >= N) {
+        _current = (_current + distance) - N;
       } else {
-        _current += index;
+        _current += distance;
       }
-      if (_steps + index >= _buffer->size()) {
-        _steps += index - _buffer->size();
+      if (_steps + distance > _buffer->size()) {
+        _steps = _steps + distance - _buffer->size();
       } else {
-        _steps += index;
+        _steps += distance;
       }
       return *this;
     }
@@ -303,20 +316,20 @@ public:
     }
 
     difference_type operator-(const Iterator& other) {
-      return _current > other._current ? _current - other._current
-                                       : other._current - _current;
+      return _current - other._current;
     }
 
-    Iterator& operator-=(const difference_type index) {
-      if (_current <= index) {
-        _current = N - (index - _current);
+    Iterator& operator-=(difference_type distance) {
+      if (_current < distance) {
+        _current = N - (distance - _current);
       } else {
-        _current -= index;
+        _current -= distance;
       }
-      if (_steps <= index) {
-        _steps = _buffer->size() - (index - _steps);
+      // convert distance to position
+      if (_steps <= distance) {
+        _steps = _buffer->size() - distance;
       } else {
-        _steps -= index;
+        _steps -= distance;
       }
       return *this;
     }
@@ -329,7 +342,7 @@ public:
 
     // for random access
     reference operator[](difference_type index) const {
-      return *(*this + index);
+      return (*this) + index;
     }
 
   private:

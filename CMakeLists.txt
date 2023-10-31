@@ -16,7 +16,7 @@ set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
 FetchContent_Declare(
   tracyProfiler
   GIT_REPOSITORY https://github.com/wolfpld/tracy
-  GIT_TAG "v0.9.1"
+  GIT_TAG "v0.10"
   GIT_SHALLOW TRUE
   GIT_PROGRESS ON
   SYSTEM
