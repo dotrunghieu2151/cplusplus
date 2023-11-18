@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <stack.hpp>
 #include <string>
 #include <string_view>
