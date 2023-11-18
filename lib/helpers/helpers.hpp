@@ -69,6 +69,32 @@ public:
     return *this;
   }
 
+  friend bool operator==(const Test& o1, const Test& o2) {
+    return o1._num == o2._num;
+  };
+
+  friend bool operator!=(const Test& o1, const Test& o2) {
+    return !(operator==(o1, o2));
+  };
+
+  friend bool operator<(const Test& o1, const Test& o2) {
+    return o1._num < o2._num;
+  };
+
+  friend bool operator>(const Test& o1, const Test& o2) {
+    return operator<(o2, o1);
+  };
+
+  friend bool operator<=(const Test& o1, const Test& o2) {
+    return !operator>(o1, o2);
+  };
+
+  friend bool operator>=(const Test& o1, const Test& o2) {
+    return !operator<(o1, o2);
+  };
+
   int num() const { return _num; }
+
+  void setNum(int num) { _num = num; }
 };
 } // namespace helpers

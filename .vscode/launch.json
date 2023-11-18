@@ -4,7 +4,7 @@
       "name": "C/C++: make launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/tests/algorithms/stack-application",
+      "program": "${workspaceFolder}/build/tests/data-structures/priority-queue",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/build",

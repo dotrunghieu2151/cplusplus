@@ -15,16 +15,29 @@
 using std::cout;
 using std::endl;
 
+#define VECTOR_DEBUG 0
+
+#if VECTOR_DEBUG == 1
+#define VECTOR_DEBUG_MS(mes)                                                   \
+  do {                                                                         \
+    helpers::printf(mes);                                                      \
+  } while (0)
+#else
+#define VECTOR_DEBUG_MS(mes)                                                   \
+  do {                                                                         \
+  } while (0)
+#endif
+
 template <typename T>
 Vector<T>::Vector(std::size_t capacity)
     : _size{0}, _space{capacity},
       _elements{static_cast<T*>(::operator new(sizeof(T) * capacity))} {
-  helpers::printf("Vector Ctor capacity");
+  VECTOR_DEBUG_MS("Vector Ctor capacity");
 }
 
 template <typename T>
 Vector<T>::Vector(std::initializer_list<T> list) : Vector(list.size()) {
-  helpers::printf("Vector Ctor List");
+  VECTOR_DEBUG_MS("Vector Ctor List");
 
   for (std::size_t index{0}; index < list.size(); ++index) {
     new (_elements + index) T{*(list.begin() + index)};
@@ -32,8 +45,17 @@ Vector<T>::Vector(std::initializer_list<T> list) : Vector(list.size()) {
   _size = list.size();
 }
 
+template <typename T>
+template <std::random_access_iterator Iter>
+Vector<T>::Vector(Iter begin, Iter end) : Vector(end - begin) {
+  VECTOR_DEBUG_MS("Vector Iterator Ctor");
+  for (auto i{begin}; i != end; ++i) {
+    push_back(*i);
+  }
+}
+
 template <typename T> Vector<T>::~Vector() {
-  helpers::printf("Vector Dtor");
+  VECTOR_DEBUG_MS("Vector Dtor");
 
   clear();
   ::operator delete(_elements);
@@ -43,7 +65,7 @@ template <typename T>
 Vector<T>::Vector(const Vector<T>& copy)
     : _size{copy._size}, _space{copy._space},
       _elements{static_cast<T*>(::operator new(sizeof(T) * copy._space))} {
-  helpers::printf("Vector Copy Ctor");
+  VECTOR_DEBUG_MS("Vector Copy Ctor");
 
   for (std::size_t index = 0; index < _size; ++index) {
     new (_elements + index) T{copy._elements[index]};
@@ -53,7 +75,7 @@ Vector<T>::Vector(const Vector<T>& copy)
 // copy-and-swap and move-and-swap idiom
 // inefficient, need testing
 template <typename T> Vector<T>& Vector<T>::operator=(const Vector<T>& copy) {
-  helpers::printf("Vector copy assign capacity");
+  VECTOR_DEBUG_MS("Vector copy assign capacity");
 
   Vector<T> tempCopy{copy};
   tempCopy.swap(*this);
@@ -63,7 +85,7 @@ template <typename T> Vector<T>& Vector<T>::operator=(const Vector<T>& copy) {
 template <typename T>
 Vector<T>::Vector(Vector<T>&& move) noexcept
     : _size{move._size}, _space{move._space}, _elements{move._elements} {
-  helpers::printf("Move Ctor capacity");
+  VECTOR_DEBUG_MS("Move Ctor capacity");
 
   move._size = 0;
   move._space = 0;
@@ -72,7 +94,7 @@ Vector<T>::Vector(Vector<T>&& move) noexcept
 
 template <typename T>
 Vector<T>& Vector<T>::operator=(Vector<T>&& move) noexcept {
-  helpers::printf("Move assignment capacity");
+  VECTOR_DEBUG_MS("Move assignment capacity");
 
   Vector<T> tempMove{std::move(move)};
   tempMove.swap(*this);

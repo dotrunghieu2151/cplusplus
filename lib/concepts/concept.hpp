@@ -30,4 +30,12 @@ concept IsStackContainer = requires(T container, const typename T::reference v,
   container.empty();
 };
 
+template <typename T>
+concept Comparable = requires(T ele, T other) {
+  ele >= other;
+  ele <= other;
+  ele > other;
+  ele < other;
+};
+
 } // namespace concepts

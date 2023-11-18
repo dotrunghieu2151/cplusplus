@@ -40,6 +40,8 @@ public:
   /* Constructors */
   Vector(std::size_t capacity);
   Vector(std::initializer_list<T> list);
+
+  template <std::random_access_iterator Iter> Vector(Iter begin, Iter end);
   ~Vector();
 
   Vector(const Vector<T>& copy);
