@@ -3,6 +3,7 @@
 #include <concept.hpp>
 #include <cstddef>
 #include <initializer_list>
+#include <iostream>
 #include <string>
 #include <utility>
 
@@ -120,7 +121,19 @@ public:
     swap(_space, other._space);
     swap(_elements, other._elements);
   }
-  friend void swap(Vector<T>& a, Vector<T>& b) noexcept { a.swap(b); };
+  friend void swap(Vector<T>& a, Vector<T>& b) noexcept { a.swap(b); }
+
+  friend std::ostream& operator<<(std::ostream& stream, const Vector& vector) {
+    auto el{vector.cbegin()};
+    stream << "[";
+    if (el != vector.cend()) {
+      stream << *el;
+      for (++el; el != vector.cend(); ++el)
+        stream << ", " << *el;
+    }
+    stream << "]";
+    return stream;
+  }
 };
 
 #include <vector.cpp>

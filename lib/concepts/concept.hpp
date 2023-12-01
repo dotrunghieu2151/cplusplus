@@ -38,4 +38,16 @@ concept Comparable = requires(T ele, T other) {
   ele < other;
 };
 
+template <typename T>
+concept Allocator =
+    requires(T allocator, typename T::size_type size, typename T::pointer ptr,
+             typename T::const_reference value,
+             typename T::rvalue_reference rvalue, void* hint) {
+      allocator.allocate(size, hint);
+      allocator.deallocate(ptr, size);
+      allocator.construct(ptr, value);
+      allocator.construct(ptr, rvalue);
+      allocator.destruct(ptr);
+    };
+
 } // namespace concepts

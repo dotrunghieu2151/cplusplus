@@ -1,96 +1,95 @@
 #pragma once
 
-#include <allocator.hpp>
 #include <array.hpp>
-#include <concept.hpp>
 #include <cstddef>
 #include <initializer_list>
 #include <string>
 #include <utility>
 #include <vector.hpp>
 
-#define CIRCULAR_BUFFER_DEBUG 0
+#define STATIC_CIRCULAR_BUFFER_DEBUG 0
 
-#if CIRCULAR_BUFFER_DEBUG == 1
-#define CIRCULAR_BUFFER_DEBUG_MS(mes)                                          \
+#if STATIC_CIRCULAR_BUFFER_DEBUG == 1
+#define STATIC_CIRCULAR_BUFFER_DEBUG_MS(mes)                                   \
   do {                                                                         \
     helpers::printf(mes);                                                      \
   } while (0)
 #else
-#define CIRCULAR_BUFFER_DEBUG_MS(mes)                                          \
+#define STATIC_CIRCULAR_BUFFER_DEBUG_MS(mes)                                   \
   do {                                                                         \
   } while (0)
 #endif
 
-template <typename T, std::size_t N, typename Allocator = Allocator<T>>
-class CircularBuffer {
+template <typename T, std::size_t N> class StaticCircularBuffer {
 public:
-  class Iterator;
-  class ReverseIterator;
+  template <bool IsConst> class Iterator;
 
-  using iterator = Iterator;
-  using reverse_iterator = ReverseIterator;
+  using iterator = Iterator<false>;
+  using const_iterator = Iterator<true>;
   using pointer = T*;
   using reference = T&;
   using rvalue_reference = T&&;
   using const_reference = const T&;
-  using value = T;
-  using self = CircularBuffer<T, N, Allocator>;
+  using value_type = T;
+  using self = StaticCircularBuffer<T, N>;
   using difference_type = typename iterator::difference_type;
 
+private:
+  std::size_t _head{};
+  std::size_t _tail{};
+  std::size_t _size{};
+  std::array<T, N> _elements{};
+
 public:
-  CircularBuffer() : _elements{_allocator.allocate(N)} {
-    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Ctor default");
-  };
-  CircularBuffer(const_reference default_value) : CircularBuffer() {
-    for (std::size_t i{0}; i < N; ++i) {
-      _allocator.construct(_elements + i, default_value);
-    }
+  StaticCircularBuffer() = default;
+  StaticCircularBuffer(const_reference default_value) : StaticCircularBuffer() {
+    _elements.fill(default_value);
     _head = 0;
     _tail = 0;
     _size = N;
-    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Ctor default value");
+    STATIC_CIRCULAR_BUFFER_DEBUG_MS("StaticCircularBuffer Ctor default value");
   };
 
-  ~CircularBuffer() {
-    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Dtor");
-    while (!empty()) {
-      pop_front();
-    }
-    _allocator.deallocate(_elements);
+  StaticCircularBuffer(rvalue_reference default_value)
+      : StaticCircularBuffer() {
+    _elements.fill(std::move(default_value));
+    _head = 0;
+    _tail = 0;
+    _size = N;
+    STATIC_CIRCULAR_BUFFER_DEBUG_MS("StaticCircularBuffer Ctor default value");
   };
-  CircularBuffer(const self& other)
-      : _allocator{other._allocator}, _head{other._head}, _tail{other._head},
-        _elements{_allocator.allocate(N)} {
-    for (const_reference i : other) {
-      push_back(i);
-    }
-    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Copy Ctor");
+
+  ~StaticCircularBuffer() {
+    STATIC_CIRCULAR_BUFFER_DEBUG_MS("StaticCircularBuffer Dtor");
   };
-  CircularBuffer(self&& other)
-      : _allocator{std::move(other._allocator)}, _head{other._head},
-        _tail{other._tail}, _elements{other._elements}, _size{other._size} {
-    other._elements = nullptr;
+  StaticCircularBuffer(const self& other)
+      : _head{other._head}, _tail{other._head}, _size{other._size},
+        _elements{other._elements} {
+    STATIC_CIRCULAR_BUFFER_DEBUG_MS("StaticCircularBuffer Copy Ctor");
+  };
+  StaticCircularBuffer(self&& other)
+      : _head{other._head}, _tail{other._tail}, _size{other._size},
+        _elements{std::move(other._elements)} {
     other._head = 0;
     other._tail = 0;
     other._size = 0;
-    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Move Ctor");
+    STATIC_CIRCULAR_BUFFER_DEBUG_MS("StaticCircularBuffer Move Ctor");
   };
 
   self& operator=(const self& other) {
-    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Copy Operator");
+    STATIC_CIRCULAR_BUFFER_DEBUG_MS("StaticCircularBuffer Copy Operator");
     self copy{other};
     copy.swap(*this);
     return *this;
   };
   self& operator=(self&& other) {
-    CIRCULAR_BUFFER_DEBUG_MS("CircularBuffer Move Operator");
+    STATIC_CIRCULAR_BUFFER_DEBUG_MS("StaticCircularBuffer Move Operator");
     self moved{std::move(other)};
     moved.swap(*this);
     return *this;
   };
 
-  reference operator[](std::size_t index) const {
+  const_reference operator[](std::size_t index) const {
     std::size_t i{_head + index};
     if (i >= N) {
       i -= N;
@@ -127,13 +126,12 @@ public:
     swap(_elements, other._elements);
     swap(_head, other._head);
     swap(_tail, other._tail);
-    swap(_allocator, other._allocator);
     swap(_size, other._size);
   }
   friend void swap(self& e1, self& e2) { e1.swap(e2); };
 
   bool empty() const noexcept { return size() == 0; };
-  std::size_t capacity() const noexcept { return _elements ? N : 0; };
+  constexpr ::size_t capacity() const noexcept { return N; };
   std::size_t size() const noexcept { return _size; };
   bool is_full() const noexcept { return _size == N; }
 
@@ -141,7 +139,7 @@ public:
     if (is_full()) {
       throw std::runtime_error("buffer is full");
     }
-    _allocator.construct(_elements + _tail, element);
+    _elements[_tail] = element;
     _tail = ++_tail == N ? 0 : _tail;
     ++_size;
   }
@@ -150,26 +148,8 @@ public:
     if (is_full()) {
       throw std::runtime_error("buffer is full");
     }
-    _allocator.construct(_elements + _tail, std::move(element));
+    _elements[_tail] = std::move(element);
     _tail = ++_tail == N ? 0 : _tail;
-    ++_size;
-  }
-
-  void push_front(const_reference element) {
-    if (is_full()) {
-      throw std::runtime_error("buffer is full");
-    }
-    _head = _head == 0 ? N - 1 : _head - 1;
-    _allocator.construct(_elements + _head, element);
-    ++_size;
-  }
-
-  void push_front(rvalue_reference element) {
-    if (is_full()) {
-      throw std::runtime_error("buffer is full");
-    }
-    _head = _head == 0 ? N - 1 : _head - 1;
-    _allocator.construct(_elements + _head, std::move(element));
     ++_size;
   }
 
@@ -246,7 +226,9 @@ public:
     difference_type distance{std::distance(start, end)};
     for (iterator i{start}; i != end; ++i) {
       (*i).~T();
-      (*i) = std::move(*(start + distance));
+    }
+    for (iterator i{end}; i != this->end(); ++i) {
+      *(i - distance) = std::move(*i);
     }
     _tail = distance > _tail ? N - (distance - _tail) : _tail - distance;
     _size -= distance;
@@ -273,6 +255,24 @@ public:
     return {index, this, index};
   }
 
+  void push_front(const_reference element) {
+    if (is_full()) {
+      throw std::runtime_error("buffer is full");
+    }
+    _head = _head == 0 ? N - 1 : _head - 1;
+    _elements[_head] = element;
+    ++_size;
+  }
+
+  void push_front(rvalue_reference element) {
+    if (is_full()) {
+      throw std::runtime_error("buffer is full");
+    }
+    _head = _head == 0 ? N - 1 : _head - 1;
+    _elements[_head] = std::move(element);
+    ++_size;
+  }
+
   T pop_front() {
     T value{std::move(_elements[_head])};
     _head = ++_head == N ? 0 : _head;
@@ -290,19 +290,13 @@ public:
   iterator begin() { return {_head, this}; }
   iterator end() { return {_tail, this, _size}; }
 
-  iterator begin() const { return {_head, this}; }
-  iterator end() const { return {_tail, this, _size}; }
+  const_iterator begin() const { return {_head, this}; }
+  const_iterator end() const { return {_tail, this, _size}; }
 
-  iterator cbegin() const { return {_head, this}; }
-  iterator cend() const { return {_tail, this, _size}; }
+  const_iterator cbegin() const { return {_head, this}; }
+  const_iterator cend() const { return {_tail, this, _size}; }
 
 private:
-  Allocator _allocator{};
-  std::size_t _head{};
-  std::size_t _tail{};
-  pointer _elements{nullptr};
-  std::size_t _size{};
-
   void validateIndex(std::size_t index) {
     if (index >= _size) {
       throw OutOfRangeException{"Index out of range"};
@@ -311,7 +305,7 @@ private:
 
 public:
   class OutOfRangeException : public std::exception {
-    friend class CircularBuffer;
+    friend class StaticCircularBuffer;
 
   private:
     std::string message;
@@ -328,20 +322,41 @@ public:
     std::string what() { return message; }
   };
 
-  class Iterator {
-    friend class CircularBuffer;
+  template <bool IsConst> class Iterator {
+    friend class StaticCircularBuffer;
+
+  private:
+    using BufferPtr = std::conditional_t<IsConst, const StaticCircularBuffer*,
+                                         StaticCircularBuffer*>;
+    std::size_t _current{};
+    std::size_t _steps{};
+
+    BufferPtr _buffer{};
+
+    Iterator(std::size_t current, BufferPtr buffer, std::size_t steps = 0)
+        : _current{current}, _steps{steps}, _buffer{buffer} {};
 
   public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = std::ptrdiff_t;
     using value_type = T;
+    using self = Iterator<IsConst>;
 
     Iterator() = default;
 
-    reference operator*() const { return _buffer->_elements[_current]; };
+    template <bool Q = IsConst>
+    typename std::enable_if<Q, const_reference>::type operator*() const {
+      return _buffer->_elements[_current];
+    };
+
+    template <bool Q = IsConst>
+    typename std::enable_if<!Q, reference>::type operator*() const {
+      return _buffer->_elements[_current];
+    };
+
     pointer operator->() const { return &_buffer->_elements[_current]; };
 
-    Iterator& operator++() {
+    self& operator++() {
       ++_current;
       if (_current == N) {
         _current = 0;
@@ -355,13 +370,13 @@ public:
       return *this;
     }
 
-    Iterator operator++(int) {
-      Iterator tmp{*this};
+    self operator++(int) {
+      self tmp{*this};
       ++(*this);
       return tmp;
     }
 
-    Iterator& operator--() {
+    self& operator--() {
       if (_current == 0) {
         _current = N - 1;
       } else {
@@ -375,24 +390,23 @@ public:
       return *this;
     }
 
-    Iterator operator--(int) {
-      Iterator tmp{*this};
+    self operator--(int) {
+      self tmp{*this};
       --(*this);
       return tmp;
     }
 
-    Iterator operator+(const difference_type index) const {
-      Iterator tmp{*this};
+    self operator+(const difference_type index) const {
+      self tmp(*this);
       tmp += index;
       return tmp;
     }
 
-    friend Iterator operator+(const difference_type index,
-                              const Iterator& other) {
+    friend self operator+(const difference_type index, const self& other) {
       return other + index;
     }
 
-    Iterator& operator+=(difference_type distance) {
+    self& operator+=(difference_type distance) {
       if (_current + distance >= N) {
         _current = (_current + distance) - N;
       } else {
@@ -406,22 +420,21 @@ public:
       return *this;
     }
 
-    Iterator operator-(const difference_type index) const {
-      Iterator tmp{*this};
+    self operator-(const difference_type index) const {
+      self tmp{*this};
       tmp -= index;
       return tmp;
     }
 
-    friend Iterator operator-(const difference_type index,
-                              const Iterator& other) {
+    friend self operator-(const difference_type index, const self& other) {
       return other - index;
     }
 
-    difference_type operator-(const Iterator& other) {
-      return _current - other._current;
+    difference_type operator-(const self& other) const {
+      return _steps - other._steps;
     }
 
-    Iterator& operator-=(difference_type distance) {
+    self& operator-=(difference_type distance) {
       if (_current < distance) {
         _current = N - (distance - _current);
       } else {
@@ -436,24 +449,13 @@ public:
       return *this;
     }
 
-    bool operator==(const Iterator& other) const {
+    bool operator==(const self& other) const {
       return _current == other._current && _steps == other._steps;
     }
 
-    bool operator!=(const Iterator& other) const { return !(*this == other); }
+    bool operator!=(const self& other) const { return !(*this == other); }
 
     // for random access
-    reference operator[](difference_type index) const {
-      return (*this) + index;
-    }
-
-  private:
-    std::size_t _current{};
-    std::size_t _steps{};
-    const CircularBuffer* _buffer{};
-
-    Iterator(std::size_t current, const CircularBuffer* buffer,
-             std::size_t steps = 0)
-        : _current{current}, _steps{steps}, _buffer{buffer} {};
+    reference operator[](difference_type index) const { return *this + index; }
   };
 };
