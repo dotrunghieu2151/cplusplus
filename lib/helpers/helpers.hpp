@@ -28,7 +28,7 @@ template <typename Last> void printf(Last& last) { cout << last << "\n"; }
 class Test {
 private:
   int _num{};
-  int* _ptr{};
+  int* _ptr{nullptr};
 
 public:
   Test() = default;

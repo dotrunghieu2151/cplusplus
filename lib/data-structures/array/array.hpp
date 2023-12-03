@@ -1,14 +1,12 @@
 #pragma once
 
-#include <allocator.hpp>
 #include <concept.hpp>
 #include <cstddef>
 #include <initializer_list>
 #include <string>
 #include <utility>
 
-template <typename T, std::size_t N, typename Allocator = Allocator<T>>
-class Array {
+template <typename T, std::size_t N> class Array {
   class OutOfRangeException : public std::exception {
   private:
     std::string message;
@@ -19,16 +17,13 @@ class Array {
   };
 
 public:
-  using self = Array<T, N, Allocator>;
-  using allocator_type = Allocator;
+  using self = Array<T, N>;
 
 private:
-  allocator_type _allocator{};
-  std::size_t _size{};
-  T* _elements{};
+  T _elements[N]{};
 
   void validateIndex(int index) const {
-    if (index < 0 || index > _size) {
+    if (index < 0 || index > N) {
       throw OutOfRangeException{"Index out of range"};
     }
   };
@@ -47,20 +42,21 @@ public:
   self& operator=(self&& move) noexcept;
 
   /* Iterators */
-  class Iterator;
+  template <bool IsConst> class Iterator;
   class ReverseIterator;
 
-  using iterator = Iterator;
+  using iterator = Iterator<false>;
+  using const_iterator = Iterator<true>;
   using reverse_iterator = ReverseIterator;
 
   iterator begin();
   iterator end();
 
-  iterator begin() const;
-  iterator end() const;
+  const_iterator begin() const;
+  const_iterator end() const;
 
-  iterator cbegin() const;
-  iterator cend() const;
+  const_iterator cbegin() const;
+  const_iterator cend() const;
 
   reverse_iterator rbegin();
   reverse_iterator rend();
@@ -72,8 +68,8 @@ public:
   reverse_iterator crend() const;
 
   /* Capacity */
-  bool empty() const { return _size == 0; };
-  std::size_t size() const { return _size; };
+  bool empty() const { return N == 0; };
+  std::size_t size() const { return N; };
 
   /* Element access */
   T& operator[](int index) { return _elements[index]; };
@@ -92,19 +88,21 @@ public:
   T& front() { return _elements[0]; };
   const T& front() const { return _elements[0]; };
 
-  T& back() { return _elements[_size - 1]; };
-  const T& back() const { return _elements[_size - 1]; };
+  T& back() { return _elements[N - 1]; };
+  const T& back() const { return _elements[N - 1]; };
 
   T* data() { return _elements; };
   const T* data() const { return _elements; };
 
   void swap(self& other) noexcept {
     using std::swap;
-    swap(_size, other._size);
     swap(_elements, other._elements);
   }
 
   friend void swap(self& a, self& b) noexcept { a.swap(b); };
 };
+
+template <class... T>
+Array(T&&... t) -> Array<std::common_type_t<T...>, sizeof...(T)>;
 
 #include <array.cpp>

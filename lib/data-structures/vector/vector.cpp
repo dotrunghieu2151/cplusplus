@@ -306,7 +306,7 @@ template <typename T> void Vector<T>::insert(int insertIndex, const T& ele) {
   validateIndex(insertIndex);
   reallocateIfRequired();
   ++_size;
-  for (std::size_t i = _size - 1; i > insertIndex; --i) {
+  for (std::size_t i{_size - 1}; i > insertIndex; --i) {
     new (_elements + i) T{std::move(_elements[i - 1])};
     _elements[i - 1].~T();
   }

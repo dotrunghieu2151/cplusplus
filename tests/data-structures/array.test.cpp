@@ -42,7 +42,7 @@ TEST_F(ArrayTest, CtorDefault) {
 }
 
 TEST_F(ArrayTest, CtorList) {
-  Array<TestObj, 2> arr2{TestObj{0}, TestObj{1}};
+  Array arr2{TestObj{0}, TestObj{1}};
   EXPECT_EQ(arr2.size(), 2);
   int index{0};
   for (const TestObj& i : arr2) {

@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <allocator.hpp>
 #include <array.hpp>
 #include <cassert>
 #include <cmath>
@@ -16,94 +15,100 @@
 using std::cout;
 using std::endl;
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>::Array()
-    : _size{N}, _elements{_allocator.allocate(_size)} {
+template <typename T, std::size_t N> Array<T, N>::Array() : _elements{} {
   helpers::printf("Array Ctor default");
 }
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>::Array(const T& defaultValue) : Array() {
-  for (std::size_t i{0}; i < _size; ++i) {
-    _allocator.construct(_elements + i, defaultValue);
+template <typename T, std::size_t N>
+Array<T, N>::Array(const T& defaultValue) : Array() {
+  for (std::size_t i{}; i < N; ++i) {
+    _elements[i] = defaultValue;
   }
   helpers::printf("Array Ctor default value");
 }
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>::Array(std::initializer_list<T> list) : Array() {
+template <typename T, std::size_t N>
+Array<T, N>::Array(std::initializer_list<T> list) : Array() {
   helpers::printf("Array Ctor List");
 
   for (std::size_t index{0}; index < list.size(); ++index) {
-    _allocator.construct(_elements + index, *(list.begin() + index));
+    _elements[index] = *(list.begin() + index);
   }
 }
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>::~Array() {
+template <typename T, std::size_t N> Array<T, N>::~Array() {
   helpers::printf("Array Dtor");
-  for (std::size_t i{0}; i < _size; ++i) {
-    _allocator.destruct(_elements + i);
+  for (std::size_t i{}; i < N; ++i) {
+    _elements[i].~T();
   }
-  _allocator.deallocate(_elements);
 }
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>::Array(const Array<T, N, Allocator>& copy)
-    : _size{copy._size}, _elements{_allocator.allocate(_size)} {
+template <typename T, std::size_t N>
+Array<T, N>::Array(const Array<T, N>& copy) : Array() {
   helpers::printf("Array Copy Ctor");
 
-  for (std::size_t index{0}; index < _size; ++index) {
-    _allocator.construct(_elements + index, copy._elements[index]);
+  for (std::size_t index{}; index < N; ++index) {
+    _elements[index] = copy._elements[index];
   }
 }
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>&
-Array<T, N, Allocator>::operator=(const Array<T, N, Allocator>& copy) {
+template <typename T, std::size_t N>
+Array<T, N>& Array<T, N>::operator=(const Array<T, N>& copy) {
   helpers::printf("Array copy");
 
-  Array<T, N, Allocator> temp{copy};
-  temp.swap(*this);
+  for (std::size_t index{}; index < N; ++index) {
+    _elements[index].~T();
+    _elements[index] = copy._elements[index];
+  }
   return *this;
 }
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>::Array(Array<T, N, Allocator>&& move) noexcept
-    : _size{move._size}, _elements{move._elements} {
+template <typename T, std::size_t N>
+Array<T, N>::Array(Array<T, N>&& move) noexcept : Array() {
   helpers::printf("Array move Ctor");
 
-  move._size = 0;
-  move._elements = nullptr;
+  for (std::size_t index{}; index < N; ++index) {
+    _elements[index] = std::move(move._elements[index]);
+  }
 }
 
-template <typename T, std::size_t N, typename Allocator>
-Array<T, N, Allocator>&
-Array<T, N, Allocator>::operator=(Array<T, N, Allocator>&& move) noexcept {
+template <typename T, std::size_t N>
+Array<T, N>& Array<T, N>::operator=(Array<T, N>&& move) noexcept {
   helpers::printf("Array Move assignment");
 
-  Array<T, N, Allocator> tempMove{std::move(move)};
-  tempMove.swap(*this);
+  for (std::size_t index{}; index < N; ++index) {
+    _elements[index].~T();
+    _elements[index] = std::move(move._elements[index]);
+  }
   return *this;
 }
 
 /* Iterator */
-template <typename T, std::size_t N, typename Allocator>
-class Array<T, N, Allocator>::Iterator {
+template <typename T, std::size_t N>
+template <bool IsConst>
+class Array<T, N>::Iterator {
 public:
   using iterator_category = std::contiguous_iterator_tag;
   using difference_type = std::ptrdiff_t;
-  using value_type = T;
-  using pointer = T*;
-  using reference = T&;
+  using value_type = std::conditional_t<IsConst, const T, T>;
+  using pointer = value_type*;
+  using reference = value_type&;
 
 private:
-  T* _current;
+  pointer _current;
 
 public:
-  Iterator(T* p) : _current{p} {}
+  Iterator(pointer p) : _current{p} {}
 
-  reference operator*() const { return *_current; }
+  template <bool Q = IsConst>
+  typename std::enable_if<Q, reference>::type operator*() const {
+    return *_current;
+  }
+
+  template <bool Q = IsConst>
+  typename std::enable_if<!Q, reference>::type operator*() {
+    return *_current;
+  }
   pointer operator->() { return _current; }
 
   Iterator& operator++() {
@@ -172,8 +177,7 @@ public:
   reference operator[](difference_type index) const { return _current[index]; }
 };
 
-template <typename T, std::size_t N, typename Allocator>
-class Array<T, N, Allocator>::ReverseIterator {
+template <typename T, std::size_t N> class Array<T, N>::ReverseIterator {
 public:
   using iterator_category = std::contiguous_iterator_tag;
   using difference_type = std::ptrdiff_t;
@@ -256,70 +260,62 @@ public:
   reference operator[](difference_type index) const { return _current[index]; }
 };
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::iterator Array<T, N, Allocator>::begin() {
+template <typename T, std::size_t N>
+typename Array<T, N>::iterator Array<T, N>::begin() {
   return iterator{&_elements[0]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::iterator
-Array<T, N, Allocator>::begin() const {
-  return iterator{&_elements[0]};
+template <typename T, std::size_t N>
+typename Array<T, N>::const_iterator Array<T, N>::begin() const {
+  return const_iterator{&_elements[0]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::iterator
-Array<T, N, Allocator>::cbegin() const {
-  return iterator{&_elements[0]};
+template <typename T, std::size_t N>
+typename Array<T, N>::const_iterator Array<T, N>::cbegin() const {
+  return const_iterator{&_elements[0]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::iterator Array<T, N, Allocator>::end() {
-  return iterator{&_elements[_size]};
+template <typename T, std::size_t N>
+typename Array<T, N>::iterator Array<T, N>::end() {
+  return iterator{&_elements[N]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::iterator Array<T, N, Allocator>::end() const {
-  return iterator{&_elements[_size]};
+template <typename T, std::size_t N>
+typename Array<T, N>::const_iterator Array<T, N>::end() const {
+  return const_iterator{&_elements[N]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::iterator Array<T, N, Allocator>::cend() const {
-  return iterator{&_elements[_size]};
+template <typename T, std::size_t N>
+typename Array<T, N>::const_iterator Array<T, N>::cend() const {
+  return const_iterator{&_elements[N]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::reverse_iterator
-Array<T, N, Allocator>::rend() {
+template <typename T, std::size_t N>
+typename Array<T, N>::reverse_iterator Array<T, N>::rend() {
   return reverse_iterator{&_elements[0]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::reverse_iterator
-Array<T, N, Allocator>::rend() const {
+template <typename T, std::size_t N>
+typename Array<T, N>::reverse_iterator Array<T, N>::rend() const {
   return reverse_iterator{&_elements[0]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::reverse_iterator
-Array<T, N, Allocator>::crend() const {
+template <typename T, std::size_t N>
+typename Array<T, N>::reverse_iterator Array<T, N>::crend() const {
   return reverse_iterator{&_elements[0]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::reverse_iterator
-Array<T, N, Allocator>::rbegin() {
-  return reverse_iterator{&_elements[_size]};
+template <typename T, std::size_t N>
+typename Array<T, N>::reverse_iterator Array<T, N>::rbegin() {
+  return reverse_iterator{&_elements[N]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::reverse_iterator
-Array<T, N, Allocator>::rbegin() const {
-  return reverse_iterator{&_elements[_size]};
+template <typename T, std::size_t N>
+typename Array<T, N>::reverse_iterator Array<T, N>::rbegin() const {
+  return reverse_iterator{&_elements[N]};
 }
 
-template <typename T, std::size_t N, typename Allocator>
-typename Array<T, N, Allocator>::reverse_iterator
-Array<T, N, Allocator>::crbegin() const {
-  return reverse_iterator{&_elements[_size]};
+template <typename T, std::size_t N>
+typename Array<T, N>::reverse_iterator Array<T, N>::crbegin() const {
+  return reverse_iterator{&_elements[N]};
 }

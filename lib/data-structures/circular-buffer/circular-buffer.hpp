@@ -174,54 +174,38 @@ public:
   }
 
   iterator insert(iterator pos, const_reference element) {
-    if (is_full()) {
-      throw std::runtime_error("buffer is full");
-    }
-    ++_size;
-    _tail = ++_tail == N ? 0 : _tail;
-    for (iterator i{end()}; i != pos; --i) {
-      (*i) = *(i - 1);
-    }
-    (*this)[pos._current] = element;
-    return {pos._current, this, pos._steps};
+    return insert(pos._current, element);
   }
 
   iterator insert(iterator pos, rvalue_reference element) {
-    if (is_full()) {
-      throw std::runtime_error("buffer is full");
-    }
-    ++_size;
-    _tail = ++_tail == N ? 0 : _tail;
-    for (iterator i{end()}; i != pos; --i) {
-      (*i) = std::move(*(i - 1));
-    }
-    (*this)[pos._current] = std::move(element);
-    return {pos._current, this, pos._steps};
+    return insert(pos._current, std::move(element));
   }
 
   iterator insert(std::size_t index, const_reference element) {
+    using std::swap;
     if (is_full()) {
       throw std::runtime_error("buffer is full");
     }
     ++_size;
+    _allocator.construct(_elements + _tail, element);
     _tail = ++_tail == N ? 0 : _tail;
     for (std::size_t i{_size - 1}; i > index; --i) {
-      (*this)[i] = std::move((*this)[i - 1]);
+      swap((*this)[i], (*this)[i - 1]);
     }
-    (*this)[index] = element;
     return {index, this, index};
   }
 
   iterator insert(std::size_t index, rvalue_reference element) {
+    using std::swap;
     if (is_full()) {
       throw std::runtime_error("buffer is full");
     }
     ++_size;
+    _allocator.construct(_elements + _tail, std::move(element));
     _tail = ++_tail == N ? 0 : _tail;
     for (std::size_t i{_size - 1}; i > index; --i) {
-      (*this)[i] = std::move((*this)[i - 1]);
+      swap((*this)[i], (*this)[i - 1]);
     }
-    (*this)[index] = std::move(element);
     return {index, this, index};
   }
 

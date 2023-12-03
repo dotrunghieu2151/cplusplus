@@ -7,6 +7,7 @@ project(bin)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_BUILD_TYPE, Debug)
 
 # install external package from git START
 include(FetchContent) 
@@ -34,10 +35,11 @@ add_compile_options(-Weffc++)
 add_compile_options(-Wextra)
 add_compile_options(-Wshadow)
 add_compile_options(-Wsign-conversion)
-add_compile_options(-fcolor-diagnostics)
-add_compile_options(-fansi-escape-codes)
-add_compile_options(-pedantic-errors)
-add_compile_options(-stdlib=libc++)
+add_compile_options(-fdiagnostics-color)
+# add_compile_options(-fcolor-diagnostics)
+# add_compile_options(-fansi-escape-codes)
+# add_compile_options(-pedantic-errors)
+# add_compile_options(-stdlib=libc++)
 
 # add_compile_options(-Ofast)
 
