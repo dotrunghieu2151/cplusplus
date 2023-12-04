@@ -35,11 +35,11 @@ public:
   using reverse_iterator = ReverseIterator;
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
-  using value = T;
-  using pointer = value*;
-  using reference = value&;
-  using rvalue_reference = value&&;
-  using const_reference = const value&;
+  using value_type = T;
+  using pointer = value_type*;
+  using reference = value_type&;
+  using rvalue_reference = value_type&&;
+  using const_reference = const value_type&;
   using self = Deque<T>;
 
 private:
@@ -48,7 +48,7 @@ private:
           ? 16
           : DEFAULT_DEQUE_BUFFER_SIZE / sizeof(T)};
 
-  using buffer = CircularBuffer<T, _chunk_size>;
+  using buffer = CircularBuffer<value_type, _chunk_size>;
   using map = SimpleDeque<buffer>;
 
   map _map;
@@ -58,8 +58,8 @@ private:
 
 public:
   /* Constructors */
-  Deque(std::size_t count = 0)
-      : _map{std::max(get_blocks_count(count), DEFAULT_DEQUE_MAP_MIN_SIZE)} {
+  explicit Deque(std::size_t count = 0)
+      : _map(std::max(get_blocks_count(count), DEFAULT_DEQUE_MAP_MIN_SIZE)) {
     std::size_t blockCount{get_blocks_count(count)};
     for (std::size_t i{}; i < blockCount; ++i) {
       _map.push_back(buffer());
@@ -70,7 +70,7 @@ public:
     DEQUE_DEBUG_MS("Deque Ctor default");
   };
 
-  Deque(std::initializer_list<value> list) : Deque(list.size()) {
+  Deque(std::initializer_list<value_type> list) : Deque(list.size()) {
     for (const_reference ele : list) {
       push_back(ele);
     }
@@ -251,9 +251,9 @@ public:
     ++_size;
   };
 
-  value pop_front() {
+  value_type pop_front() {
     buffer& headBlock{_map[_head._blockIndex]};
-    value ele{headBlock.pop_front()};
+    value_type ele{headBlock.pop_front()};
     if (headBlock.empty()) {
       ++_head._blockIndex;
     } else if (_head._blockIndex == _tail._blockIndex) {
@@ -262,9 +262,9 @@ public:
     --_size;
     return ele;
   };
-  value pop_back() {
+  value_type pop_back() {
     buffer& tailBlock{_map[_tail._blockIndex]};
-    value ele{tailBlock.pop_back()};
+    value_type ele{tailBlock.pop_back()};
     if (tailBlock.empty()) {
       --_tail._blockIndex;
       _tail._currentIndex = _chunk_size;
@@ -342,8 +342,8 @@ public:
     friend class Deque;
 
   public:
-    using iterator_category = iterator_category;
-    using difference_type = difference_type;
+    using iterator_category = Deque::iterator_category;
+    using difference_type = Deque::difference_type;
 
   public:
     Iterator() = default;

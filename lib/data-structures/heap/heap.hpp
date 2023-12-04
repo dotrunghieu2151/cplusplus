@@ -140,7 +140,7 @@ private:
     // N/2 -1
     const int lastNonLeafNodeIndex(_container.size() / 2 - 1);
     for (int i{lastNonLeafNodeIndex}; i >= 0; --i) {
-      move_down(i);
+      move_down(static_cast<std::size_t>(i));
     }
   }
   void move_up(std::size_t index) {

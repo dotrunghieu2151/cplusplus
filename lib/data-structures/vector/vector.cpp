@@ -47,7 +47,8 @@ Vector<T>::Vector(std::initializer_list<T> list) : Vector(list.size()) {
 
 template <typename T>
 template <std::random_access_iterator Iter>
-Vector<T>::Vector(Iter begin, Iter end) : Vector(end - begin) {
+Vector<T>::Vector(Iter begin, Iter end)
+    : Vector(static_cast<std::size_t>(end - begin)) {
   VECTOR_DEBUG_MS("Vector Iterator Ctor");
   for (auto i{begin}; i != end; ++i) {
     push_back(*i);
@@ -278,31 +279,33 @@ void Vector<T>::emplace_back(Args&&... args) {
   ++_size;
 }
 
-template <typename T> void Vector<T>::erase(int index) {
+template <typename T> void Vector<T>::erase(std::size_t index) {
   validateIndex(index);
   _elements[index].~T();
-  for (int i = index; i < _size; ++i) {
+  for (std::size_t i{index}; i < _size; ++i) {
     new (_elements + i) T{std::move(_elements[i + 1])};
     _elements[i + 1].~T();
   }
   --_size;
 }
 
-template <typename T> void Vector<T>::erase(int startIndex, int endIndex) {
+template <typename T>
+void Vector<T>::erase(std::size_t startIndex, std::size_t endIndex) {
   validateIndex(startIndex);
   validateIndex(endIndex);
-  int distance = endIndex - startIndex + 1;
-  for (int i = startIndex; i <= endIndex; ++i) {
+  std::size_t distance{endIndex - startIndex + 1};
+  for (std::size_t i{startIndex}; i <= endIndex; ++i) {
     _elements[i].~T();
   }
-  for (int i = endIndex + 1; i < _size; ++i) {
+  for (std::size_t i{endIndex + 1}; i < _size; ++i) {
     new (_elements + i - distance) T{std::move(_elements[i])};
     _elements[i].~T();
   }
   _size -= distance;
 }
 
-template <typename T> void Vector<T>::insert(int insertIndex, const T& ele) {
+template <typename T>
+void Vector<T>::insert(std::size_t insertIndex, const T& ele) {
   validateIndex(insertIndex);
   reallocateIfRequired();
   ++_size;
@@ -312,11 +315,11 @@ template <typename T> void Vector<T>::insert(int insertIndex, const T& ele) {
   }
   new (_elements + insertIndex) T{ele};
 }
-template <typename T> void Vector<T>::insert(int insertIndex, T&& ele) {
+template <typename T> void Vector<T>::insert(std::size_t insertIndex, T&& ele) {
   validateIndex(insertIndex);
   reallocateIfRequired();
   ++_size;
-  for (std::size_t i = _size - 1; i > insertIndex; --i) {
+  for (std::size_t i{_size - 1}; i > insertIndex; --i) {
     new (_elements + i) T{std::move(_elements[i - 1])};
     _elements[i - 1].~T();
   }
@@ -325,7 +328,7 @@ template <typename T> void Vector<T>::insert(int insertIndex, T&& ele) {
 
 template <typename T>
 template <typename... Args>
-void Vector<T>::insert(int insertIndex, Args&&... args) {
+void Vector<T>::insert(std::size_t insertIndex, Args&&... args) {
   validateIndex(insertIndex);
   constexpr int eleNum = sizeof...(args);
   std::size_t oldSize{_size};
@@ -334,7 +337,7 @@ void Vector<T>::insert(int insertIndex, Args&&... args) {
     reallocate(_size * growRate);
   }
 
-  for (std::size_t i = oldSize - 1; i >= insertIndex; --i) {
+  for (std::size_t i{oldSize - 1}; i >= insertIndex; --i) {
     new (_elements + i + eleNum) T{std::move(_elements[i])};
     _elements[i].~T();
   }
@@ -343,16 +346,16 @@ void Vector<T>::insert(int insertIndex, Args&&... args) {
 
 template <typename T>
 template <concepts::IsIterator Input>
-void Vector<T>::insert(int insertIndex, Input first, Input last) {
+void Vector<T>::insert(std::size_t insertIndex, Input first, Input last) {
   validateIndex(insertIndex);
-  int eleNum = last - first;
+  std::size_t eleNum{static_cast<std::size_t>(last - first)};
   std::size_t oldSize{_size};
   _size += eleNum;
   if (_size > _space) {
     reallocate(_size * growRate);
   }
 
-  for (std::size_t i = oldSize - 1; i >= insertIndex; --i) {
+  for (std::size_t i{oldSize - 1}; i >= insertIndex; --i) {
     new (_elements + i + eleNum) T{std::move(_elements[i])};
     _elements[i].~T();
   }

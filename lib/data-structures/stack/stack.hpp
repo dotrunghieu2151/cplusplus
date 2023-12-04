@@ -12,7 +12,7 @@ class Stack {
 
 public:
   using container_type = Container;
-  using value_type = typename Container::value;
+  using value_type = typename Container::value_type;
   using reference = typename Container::reference;
   using rvalue_reference = typename Container::rvalue_reference;
 

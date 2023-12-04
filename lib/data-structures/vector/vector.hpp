@@ -11,7 +11,7 @@ template <typename T> class Vector {
   inline static constexpr double growRate{1.5};
 
 public:
-  using value = T;
+  using value_type = T;
   using reference = T&;
   using rvalue_reference = T&&;
 
@@ -31,8 +31,8 @@ private:
 
   void reallocateIfRequired();
   void reallocate(std::size_t capacity);
-  void validateIndex(int index) const {
-    if (index < 0 || index >= _size) {
+  void validateIndex(std::size_t index) const {
+    if (index >= _size) {
       throw OutOfRangeException{"Index out of range"};
     }
   };
@@ -81,27 +81,28 @@ public:
   void clear();
   void push_back(T&& val);
   void push_back(const T& val);
-  value pop_back();
+  value_type pop_back();
 
   template <typename... Args> void emplace_back(Args&&... args);
-  void insert(int insertIndex, const T& ele);
-  void insert(int insertIndex, T&& ele);
-  template <typename... Args> void insert(int insertIndex, Args&&... args);
+  void insert(std::size_t insertIndex, const T& ele);
+  void insert(std::size_t insertIndex, T&& ele);
+  template <typename... Args>
+  void insert(std::size_t insertIndex, Args&&... args);
   template <concepts::IsIterator Input>
-  void insert(int insertIndex, Input first, Input last);
-  void erase(int index);
-  void erase(int startIndex, int endIndex);
+  void insert(std::size_t insertIndex, Input first, Input last);
+  void erase(std::size_t index);
+  void erase(std::size_t startIndex, std::size_t endIndex);
 
   /* Element access */
-  T& operator[](int index) { return _elements[index]; };
-  const T& operator[](int index) const { return _elements[index]; };
+  T& operator[](std::size_t index) { return _elements[index]; };
+  const T& operator[](std::size_t index) const { return _elements[index]; };
 
-  T& at(int index) {
+  T& at(std::size_t index) {
     validateIndex(index);
     return _elements[index];
   };
 
-  const T& at(int index) const {
+  const T& at(std::size_t index) const {
     validateIndex(index);
     return _elements[index];
   };

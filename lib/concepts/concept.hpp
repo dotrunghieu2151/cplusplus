@@ -18,7 +18,7 @@ concept IsIterator = requires(T a) { typename T::iterator_category; };
 template <typename T>
 concept IsStackContainer = requires(T container, const typename T::reference v,
                                     typename T::rvalue_reference vr) {
-  typename T::value;
+  typename T::value_type;
   typename T::reference;
   typename T::rvalue_reference;
 

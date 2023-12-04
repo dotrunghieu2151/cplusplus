@@ -9,8 +9,8 @@
 
 class ContainerTest : public ::testing::Test {
 public:
-  MinHeap<helpers::Test> _minHeap;
-  MaxHeap<helpers::Test> _maxHeap;
+  MinHeap<helpers::Test> _minHeap{};
+  MaxHeap<helpers::Test> _maxHeap{};
 
   // void containersEq(const Deque<TestObj>& c1, const Deque<TestObj>& c2) {
   //   EXPECT_EQ(c1.size(), c2.size());

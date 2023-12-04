@@ -331,8 +331,8 @@ public:
       os << "]  ";
       --rowNodeCount;
       if (!node->is_leaf()) {
-        for (std::size_t i{}; i < node->_children.size(); ++i) {
-          queue.push_back(node->_children[i]);
+        for (std::size_t index{}; index < node->_children.size(); ++index) {
+          queue.push_back(node->_children[index]);
         }
         nextRowNodeCount += node->_children.size();
       }

@@ -15,10 +15,11 @@ Monster generate() {
 
   auto rndType{static_cast<Type>(
       uniformRand(0, static_cast<int>(Type::max_monster_types) - 1))};
-  return Monster{
-      rndType,
-      nameRndPool.at(uniformRand(0, static_cast<int>(nameRndPool.size() - 1))),
-      roarRndPool.at(uniformRand(0, static_cast<int>(roarRndPool.size() - 1))),
-      uniformRand(0, 1000)};
+  return Monster{rndType,
+                 nameRndPool.at(static_cast<std::size_t>(
+                     uniformRand(0, nameRndPool.size() - 1))),
+                 roarRndPool.at(static_cast<std::size_t>(
+                     uniformRand(0, roarRndPool.size() - 1))),
+                 uniformRand(0, 1000)};
 }
 } // namespace MonsterGenerator

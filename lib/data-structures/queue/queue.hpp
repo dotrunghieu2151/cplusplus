@@ -212,7 +212,7 @@ public:
       reallocate(newCapacity);
       return insert(iterator{_head + distance}, start, end);
     }
-  };
+  }
 
   iterator erase(iterator start, iterator end) {
     difference_type distance{end - start};
@@ -242,7 +242,7 @@ public:
   reference back() const { return *(_tail - 1); };
 
   pointer data() { return _elements; };
-  const pointer data() const { return _elements; };
+  pointer data() const { return _elements; };
 
   reference at(std::size_t index) {
     validateIndex(index);
@@ -259,7 +259,9 @@ public:
   bool empty() const noexcept { return size() == 0; };
   bool is_full() const noexcept { return size() == _capacity; };
   std::size_t capacity() const noexcept { return _capacity; };
-  std::size_t size() const noexcept { return _tail - _head; };
+  std::size_t size() const noexcept {
+    return static_cast<std::size_t>(_tail - _head);
+  };
 
   iterator begin() { return iterator{_head}; };
   iterator end() { return iterator{_tail}; };
@@ -351,8 +353,8 @@ public:
     friend class Queue;
 
   public:
-    using iterator_category = iterator_category;
-    using difference_type = difference_type;
+    using iterator_category = Queue::iterator_category;
+    using difference_type = Queue::difference_type;
 
     Iterator() = default;
 

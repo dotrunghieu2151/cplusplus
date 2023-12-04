@@ -43,7 +43,7 @@ public:
 
   SimpleDeque() = default;
 
-  SimpleDeque(std::size_t capacity)
+  explicit SimpleDeque(std::size_t capacity)
       : _capacity{capacity}, _elements{_allocator.allocate(capacity)},
         _head{_elements + static_cast<std::size_t>(std::round(capacity * 0.5)) -
               1},
@@ -216,7 +216,8 @@ public:
       std::size_t freeBlocksEachSideAfterInsert{
           static_cast<std::size_t>(std::round(freeBlocksAfterInsert * 0.5))};
       std::size_t leftFreeBlocks{static_cast<std::size_t>(_head - _elements)};
-      std::size_t rightFreeBlocks(_capacity + _elements - _tail);
+      std::size_t rightFreeBlocks{
+          static_cast<std::size_t>(_capacity + _elements - _tail)};
       std::size_t leftMoveDistance{
           leftFreeBlocks > freeBlocksEachSideAfterInsert
               ? leftFreeBlocks - freeBlocksEachSideAfterInsert
@@ -248,7 +249,7 @@ public:
       reallocate(newCapacity);
       return insert(iterator{_head + distance}, start, end);
     }
-  };
+  }
 
   iterator erase(iterator start, iterator end) {
     difference_type distance{end - start};
@@ -278,7 +279,7 @@ public:
   reference back() const { return *(_tail - 1); };
 
   pointer data() { return _elements; };
-  const pointer data() const { return _elements; };
+  pointer data() const { return _elements; };
 
   reference at(std::size_t index) {
     validateIndex(index);
@@ -295,7 +296,9 @@ public:
   bool empty() const noexcept { return size() == 0; };
   bool is_full() const noexcept { return size() == _capacity; };
   std::size_t capacity() const noexcept { return _capacity; };
-  std::size_t size() const noexcept { return _tail - _head; };
+  std::size_t size() const noexcept {
+    return static_cast<std::size_t>(_tail - _head);
+  };
 
   iterator begin() { return iterator{_head}; };
   iterator end() { return iterator{_tail}; };
@@ -388,8 +391,8 @@ public:
     friend class SimpleDeque;
 
   public:
-    using iterator_category = iterator_category;
-    using difference_type = difference_type;
+    using iterator_category = SimpleDeque::iterator_category;
+    using difference_type = SimpleDeque::difference_type;
 
     Iterator() = default;
 

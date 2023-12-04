@@ -9,7 +9,7 @@
 
 class ContainerTest : public ::testing::Test {
 public:
-  trees::BST<helpers::Test> _bst;
+  trees::BST<helpers::Test> _bst{};
 
   // void containersEq(const Deque<TestObj>& c1, const Deque<TestObj>& c2) {
   //   EXPECT_EQ(c1.size(), c2.size());

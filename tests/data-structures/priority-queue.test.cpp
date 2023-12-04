@@ -12,8 +12,8 @@
 
 class ContainerTest : public ::testing::Test {
 public:
-  PriorityQueue<helpers::Test, std::less_equal<helpers::Test>> _minPQ;
-  PriorityQueue<helpers::Test, std::greater_equal<helpers::Test>> _maxPQ;
+  PriorityQueue<helpers::Test, std::less_equal<helpers::Test>> _minPQ{};
+  PriorityQueue<helpers::Test, std::greater_equal<helpers::Test>> _maxPQ{};
 
   // void containersEq(const Deque<TestObj>& c1, const Deque<TestObj>& c2) {
   //   EXPECT_EQ(c1.size(), c2.size());

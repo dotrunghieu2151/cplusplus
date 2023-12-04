@@ -11,16 +11,14 @@ class ArrayTest : public ::testing::Test {
 public:
   Array<TestObj, 4> arr1;
 
-  ArrayTest() {
-    arr1 = Array<TestObj, 4>{TestObj{0}, TestObj{1}, TestObj{2}, TestObj{3}};
-  }
+  ArrayTest() : arr1{TestObj{0}, TestObj{1}, TestObj{2}, TestObj{3}} {}
 
-  void testListsEq(const Array<TestObj, 4>& arr1,
-                   const Array<TestObj, 4>& arr2) {
-    EXPECT_EQ(arr1.size(), arr2.size());
+  void testListsEq(const Array<TestObj, 4>& array1,
+                   const Array<TestObj, 4>& array2) {
+    EXPECT_EQ(array1.size(), array2.size());
     std::size_t index{0};
-    for (const TestObj& i : arr2) {
-      EXPECT_EQ(i.num(), arr1[index].num());
+    for (const TestObj& i : array2) {
+      EXPECT_EQ(i.num(), array1[index].num());
       ++index;
     }
   }

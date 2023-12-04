@@ -95,8 +95,8 @@ TEST_F(CircularBufferTest, Iterator) {
   buff3.pop_front();
   buff3.push_back(TestObj{0});
   index = 0;
-  for (int i{}; i < 4; ++i) {
-    buff3[i] = TestObj{i};
+  for (std::size_t i{}; i < 4; ++i) {
+    buff3[i] = TestObj{static_cast<int>(i)};
   }
   EXPECT_EQ(buff3.size(), 4);
 

@@ -13,13 +13,13 @@ class ListTest : public ::testing::Test {
 public:
   List<TestObj> l1;
 
-  ListTest() { l1 = List<TestObj>{TestObj{1}, TestObj{2}, TestObj{3}}; }
+  ListTest() : l1{TestObj{1}, TestObj{2}, TestObj{3}} {}
 
-  void testListsEq(const List<TestObj>& l1, const List<TestObj>& l2) {
-    EXPECT_EQ(l2.size(), l1.size());
+  void testListsEq(const List<TestObj>& list1, const List<TestObj>& list2) {
+    EXPECT_EQ(list2.size(), list1.size());
     std::size_t index{0};
-    for (const TestObj& i : l2) {
-      EXPECT_EQ(i.num(), l1[index].num());
+    for (const TestObj& i : list2) {
+      EXPECT_EQ(i.num(), list1[index].num());
       ++index;
     }
   }
@@ -126,7 +126,7 @@ TEST_F(ListTest, popBackPushBack) {
     l1.push_back(test);
   }
 
-  for (int i{0}; i < 3; ++i) {
+  for (std::size_t i{}; i < 3; ++i) {
     EXPECT_EQ(l1[i].num(), i + 1);
   }
 
@@ -142,7 +142,7 @@ TEST_F(ListTest, popBackPushBack) {
 
 TEST_F(ListTest, popFrontPushFront) {
   const std::size_t size{l1.size()};
-  for (int i{0}; i < size; ++i) {
+  for (std::size_t i{}; i < size; ++i) {
     l1.pop_front();
   }
 

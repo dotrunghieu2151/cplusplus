@@ -207,7 +207,7 @@ public:
 
   template <typename Iter>
   iterator insert(std::size_t index, Iter start, Iter end) {
-    difference_type distance{std::distance(start, end)};
+    std::size_t distance{static_cast<std::size_t>(std::distance(start, end))};
     if (size() + distance > capacity()) {
       throw std::runtime_error("buffer is full");
     }
@@ -217,13 +217,13 @@ public:
       (*this)[i] = std::move((*this)[i - distance]);
     }
     for (std::size_t i{}; i < distance; ++i) {
-      (*this)[index + i] = *(start + i);
+      (*this)[index + i] = *(start + static_cast<difference_type>(i));
     }
     return {index, this, index};
   }
 
   iterator erase(iterator start, iterator end) {
-    difference_type distance{std::distance(start, end)};
+    std::size_t distance{static_cast<std::size_t>(std::distance(start, end))};
     for (iterator i{start}; i != end; ++i) {
       (*i).~T();
     }
@@ -347,12 +347,12 @@ public:
     template <bool Q = IsConst>
     typename std::enable_if<Q, const_reference>::type operator*() const {
       return _buffer->_elements[_current];
-    };
+    }
 
     template <bool Q = IsConst>
     typename std::enable_if<!Q, reference>::type operator*() const {
       return _buffer->_elements[_current];
-    };
+    }
 
     pointer operator->() const { return &_buffer->_elements[_current]; };
 
@@ -396,7 +396,7 @@ public:
       return tmp;
     }
 
-    self operator+(const difference_type index) const {
+    self operator+(std::size_t index) const {
       self tmp(*this);
       tmp += index;
       return tmp;
@@ -406,7 +406,7 @@ public:
       return other + index;
     }
 
-    self& operator+=(difference_type distance) {
+    self& operator+=(std::size_t distance) {
       if (_current + distance >= N) {
         _current = (_current + distance) - N;
       } else {
@@ -420,21 +420,22 @@ public:
       return *this;
     }
 
-    self operator-(const difference_type index) const {
+    self operator-(std::size_t index) const {
       self tmp{*this};
       tmp -= index;
       return tmp;
     }
 
-    friend self operator-(const difference_type index, const self& other) {
+    friend self operator-(std::size_t index, const self& other) {
       return other - index;
     }
 
     difference_type operator-(const self& other) const {
-      return _steps - other._steps;
+      return static_cast<difference_type>(_steps) -
+             static_cast<difference_type>(other._steps);
     }
 
-    self& operator-=(difference_type distance) {
+    self& operator-=(std::size_t distance) {
       if (_current < distance) {
         _current = N - (distance - _current);
       } else {

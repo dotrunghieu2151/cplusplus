@@ -2,6 +2,7 @@ add_executable(bin main.cpp)
 add_executable(monster monster.cpp)
 add_executable(vector vector-test.cpp)
 add_executable(deque-perf-test deque-perf-test.cpp)
+add_executable(order order.cpp)
 
 target_link_libraries(bin myLib)
 target_link_libraries(monster myLib)

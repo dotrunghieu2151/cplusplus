@@ -12,7 +12,7 @@
 
 class ContainerTest : public ::testing::Test {
 public:
-  trees::BTree<int, helpers::Test, 2> _btree;
+  trees::BTree<int, helpers::Test, 2> _btree{};
 
   // void containersEq(const Deque<TestObj>& c1, const Deque<TestObj>& c2) {
   //   EXPECT_EQ(c1.size(), c2.size());
@@ -41,13 +41,13 @@ protected:
 
 class ContainerDeleteTest : public ::testing::Test {
 public:
-  trees::BTree<int, helpers::Test, 3> _btree;
+  trees::BTree<int, helpers::Test, 3> _btree{};
   Vector<int> _flatBTree{1,  9,  15, 17, 19, 21, 22, 23, 25, 27, 30, 31,
                          32, 39, 40, 41, 47, 50, 55, 56, 60, 63, 72, 90};
 
   void compareBtreeEqualFlat() {
     std::size_t i{};
-    _btree.walk_depth_first_inorder([this, &i](int key, helpers::Test& data) {
+    _btree.walk_depth_first_inorder([this, &i](int, helpers::Test& data) {
       EXPECT_EQ(data.num(), this->_flatBTree[i]);
       ++i;
     });
@@ -103,7 +103,7 @@ protected:
 TEST_F(ContainerTest, BtreeCopy) {
   trees::BTree<int, helpers::Test, 2> tree{_btree};
   int index{};
-  tree.walk_depth_first_inorder([&index](const int& key, helpers::Test& data) {
+  tree.walk_depth_first_inorder([&index](const int&, helpers::Test& data) {
     EXPECT_EQ(data.num(), index);
     ++index;
   });
@@ -113,7 +113,7 @@ TEST_F(ContainerTest, BtreeWalkPreOrder) {
   std::array flatBtree{3, 1, 0, 2, 5, 4, 7, 6, 8, 9};
   std::size_t index{};
   _btree.walk_depth_first_preorder(
-      [&index, &flatBtree](const int& key, helpers::Test& data) {
+      [&index, &flatBtree](const int&, helpers::Test& data) {
         EXPECT_EQ(data.num(), flatBtree[index]);
         ++index;
       });
@@ -124,7 +124,7 @@ TEST_F(ContainerTest, BtreeWalkPostOrder) {
   std::array flatBtree{0, 2, 1, 4, 6, 8, 9, 5, 7, 3};
   std::size_t index{};
   _btree.walk_depth_first_postorder(
-      [&index, &flatBtree](const int& key, helpers::Test& data) {
+      [&index, &flatBtree](const int&, helpers::Test& data) {
         EXPECT_EQ(data.num(), flatBtree[index]);
         ++index;
       });

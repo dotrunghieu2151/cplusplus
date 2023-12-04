@@ -27,14 +27,14 @@ public:
   Allocator(){};
   ~Allocator(){};
   Allocator(const Allocator&){};
-  template <typename U> Allocator(const Allocator<U>&){};
+  template <typename U> Allocator(const Allocator<U>&) {}
 
   // address
   pointer address(reference r) { return &r; };
-  const_pointer address(const_reference r) { return &r; };
+  pointer address(const_reference r) const { return &r; };
 
   // memory allocation
-  pointer allocate(size_type count, void* hint = 0) {
+  pointer allocate(size_type count) {
     return reinterpret_cast<pointer>(
         ::operator new(count * sizeof(value_type)));
   };

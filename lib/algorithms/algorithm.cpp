@@ -20,10 +20,10 @@ bool is_close_parenthesis(char c) {
 }
 
 bool are_parentheses_matched(char openingParenthesis, char closingParenthesis) {
-  ptrdiff_t pointerIndex{std::find(std::begin(closeParenthesis),
-                                   std::end(closeParenthesis),
-                                   closingParenthesis) -
-                         std::begin(closeParenthesis)};
+  std::size_t pointerIndex{static_cast<std::size_t>(
+      std::find(std::begin(closeParenthesis), std::end(closeParenthesis),
+                closingParenthesis) -
+      std::begin(closeParenthesis))};
   return pointerIndex < closeParenthesis.size() &&
          openingParenthesis == openParenthesis[pointerIndex];
 }
@@ -86,7 +86,7 @@ int perform_operation(char operation, int operand1, int operand2) {
 
 int evaluate_postfix(std::string_view str, char deliminator = ' ') {
   Stack<int> stack{};
-  for (int i{}; i < str.length(); ++i) {
+  for (std::size_t i{}; i < str.length(); ++i) {
     char c{str[i]};
     if (is_numeric(c)) {
       int num{c - '0'};
@@ -109,7 +109,7 @@ std::string convert_infix_to_postfix(std::string_view str, char deliminator) {
   Stack<char> stack{};
   std::string postfix{};
   postfix.reserve(str.size());
-  for (int i{}; i < str.length(); ++i) {
+  for (std::size_t i{}; i < str.length(); ++i) {
     char c{str[i]};
     if (is_operand(c)) {
       // get multi-digit number
@@ -141,10 +141,10 @@ std::string convert_infix_to_postfix(std::string_view str, char deliminator) {
   return postfix;
 }
 
-std::string convert_infix_to_prefix(std::string_view str,
-                                    char deliminator = ' ') {}
+// std::string convert_infix_to_prefix(std::string_view str,
+//                                     char deliminator = ' ') {}
 
-int evaluate_prefix(std::string_view str, char deliminator = ' ') {}
+// int evaluate_prefix(std::string_view str, char deliminator = ' ') {}
 } // namespace
 
 namespace algorithms {

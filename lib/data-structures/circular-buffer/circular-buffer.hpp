@@ -34,7 +34,7 @@ public:
   using reference = T&;
   using rvalue_reference = T&&;
   using const_reference = const T&;
-  using value = T;
+  using value_type = T;
   using self = CircularBuffer<T, N, Allocator>;
   using difference_type = typename iterator::difference_type;
 
@@ -211,7 +211,7 @@ public:
 
   template <typename Iter>
   iterator insert(std::size_t index, Iter start, Iter end) {
-    difference_type distance{std::distance(start, end)};
+    std::size_t distance{static_cast<std::size_t>(std::distance(start, end))};
     if (size() + distance > capacity()) {
       throw std::runtime_error("buffer is full");
     }
@@ -221,13 +221,13 @@ public:
       (*this)[i] = std::move((*this)[i - distance]);
     }
     for (std::size_t i{}; i < distance; ++i) {
-      (*this)[index + i] = *(start + i);
+      (*this)[index + i] = *(start + static_cast<difference_type>(i));
     }
     return {index, this, index};
   }
 
   iterator erase(iterator start, iterator end) {
-    difference_type distance{std::distance(start, end)};
+    std::size_t distance{static_cast<std::size_t>(std::distance(start, end))};
     for (iterator i{start}; i != end; ++i) {
       (*i).~T();
       (*i) = std::move(*(start + distance));
@@ -365,18 +365,17 @@ public:
       return tmp;
     }
 
-    Iterator operator+(const difference_type index) const {
+    Iterator operator+(std::size_t index) const {
       Iterator tmp{*this};
       tmp += index;
       return tmp;
     }
 
-    friend Iterator operator+(const difference_type index,
-                              const Iterator& other) {
+    friend Iterator operator+(std::size_t index, const Iterator& other) {
       return other + index;
     }
 
-    Iterator& operator+=(difference_type distance) {
+    Iterator& operator+=(std::size_t distance) {
       if (_current + distance >= N) {
         _current = (_current + distance) - N;
       } else {
@@ -390,7 +389,7 @@ public:
       return *this;
     }
 
-    Iterator operator-(const difference_type index) const {
+    Iterator operator-(std::size_t index) const {
       Iterator tmp{*this};
       tmp -= index;
       return tmp;
@@ -402,10 +401,11 @@ public:
     }
 
     difference_type operator-(const Iterator& other) {
-      return _current - other._current;
+      return static_cast<difference_type>(_current) -
+             static_cast<difference_type>(other._current);
     }
 
-    Iterator& operator-=(difference_type distance) {
+    Iterator& operator-=(std::size_t distance) {
       if (_current < distance) {
         _current = N - (distance - _current);
       } else {

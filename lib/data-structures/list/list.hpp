@@ -29,6 +29,14 @@ private:
       _prev->_next = this;
     };
 
+    Node(const Node& copy) = default;
+
+    Node(Node&& move) = default;
+
+    Node& operator=(const Node& copy) = default;
+
+    Node& operator=(Node&& move) = default;
+
     virtual ~Node() = default;
   };
 
@@ -38,8 +46,8 @@ private:
     T _data{};
 
     DataNode() = default;
-    DataNode(const T& data) : _data{data} {};
-    DataNode(T&& data) : _data{std::move(data)} {};
+    DataNode(const T& data) : Node(), _data{data} {};
+    DataNode(T&& data) : Node(), _data{std::move(data)} {};
   };
 
 private:
