@@ -91,19 +91,11 @@ public:
   };
 
   reference operator[](std::size_t index) const {
-    std::size_t i{_head + index};
-    if (i >= N) {
-      i -= N;
-    }
-    return _elements[i];
+    return _elements[get_offset_index(index)];
   }
 
   reference operator[](std::size_t index) {
-    std::size_t i{_head + index};
-    if (i >= N) {
-      i -= N;
-    }
-    return _elements[i];
+    return _elements[get_offset_index(index)];
   }
 
   reference at(std::size_t index) {
@@ -218,10 +210,12 @@ public:
     _size += distance;
     _tail = _tail + distance >= N ? _tail + distance - N : _tail + distance;
     for (std::size_t i{_size - 1}; i >= index + distance; --i) {
-      (*this)[i] = std::move((*this)[i - distance]);
+      _allocator.construct(_elements + get_offset_index(i),
+                           std::move((*this)[i - distance]));
     }
     for (std::size_t i{}; i < distance; ++i) {
-      (*this)[index + i] = *(start + static_cast<difference_type>(i));
+      _allocator.construct(_elements + get_offset_index(index + i),
+                           *(start + static_cast<difference_type>(i)));
     }
     return {index, this, index};
   }
@@ -287,10 +281,18 @@ private:
   pointer _elements{nullptr};
   std::size_t _size{};
 
-  void validateIndex(std::size_t index) {
+  void validateIndex(std::size_t index) const {
     if (index >= _size) {
       throw OutOfRangeException{"Index out of range"};
     }
+  }
+
+  std::size_t get_offset_index(std::size_t index) const noexcept {
+    std::size_t i{_head + index};
+    if (i >= N) {
+      i -= N;
+    }
+    return i;
   }
 
 public:
