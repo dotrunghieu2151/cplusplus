@@ -12,7 +12,7 @@
 
 class ContainerTest : public ::testing::Test {
 public:
-  trees::BTree<int, helpers::Test, 2> _btree{};
+  trees::BPlusTree<int, helpers::Test, 2> _btree{};
 
   // void containersEq(const Deque<TestObj>& c1, const Deque<TestObj>& c2) {
   //   EXPECT_EQ(c1.size(), c2.size());
@@ -41,7 +41,7 @@ protected:
 
 class ContainerDeleteTest : public ::testing::Test {
 public:
-  trees::BTree<int, helpers::Test, 3> _btree{};
+  trees::BPlusTree<int, helpers::Test, 3> _btree{};
   Vector<int> _flatBTree{1,  9,  15, 17, 19, 21, 22, 23, 25, 27, 30, 31,
                          32, 39, 40, 41, 47, 50, 55, 56, 60, 63, 72, 90};
 
@@ -101,7 +101,7 @@ protected:
 };
 
 TEST_F(ContainerTest, BtreeCopy) {
-  trees::BTree<int, helpers::Test, 2> tree{_btree};
+  trees::BPlusTree<int, helpers::Test, 2> tree{_btree};
   int index{};
   tree.walk_depth_first_inorder([&index](const int&, helpers::Test& data) {
     EXPECT_EQ(data.num(), index);
@@ -155,7 +155,6 @@ TEST_F(ContainerTest, BtreeMax) {
 }
 
 TEST_F(ContainerDeleteTest, BtreeDelete) {
-  std::cout << _btree << "\n";
   EXPECT_EQ(_btree.height(), 2);
   // case 1: Remove key from leaf node with sufficient num of keys
   _btree.remove(21);

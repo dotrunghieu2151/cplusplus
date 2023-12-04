@@ -334,7 +334,7 @@ public:
         for (std::size_t index{}; index < node->_children.size(); ++index) {
           queue.push_back(node->_children[index]);
         }
-        nextRowNodeCount += node->_children.size();
+        nextRowNodeCount += static_cast<int>(node->_children.size());
       }
       if (rowNodeCount == 0) {
         os << "\n";

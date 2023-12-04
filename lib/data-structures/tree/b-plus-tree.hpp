@@ -9,15 +9,15 @@
 #include <static-circular-buffer.hpp>
 #include <utility>
 
-#define B_TREE_DEBUG 0
+#define B_PLUS_DEBUG 0
 
-#if B_TREE_DEBUG == 1
-#define B_TREE_DEBUG_MS(mes)                                                   \
+#if B_PLUS_DEBUG == 1
+#define B_PLUS_DEBUG_MS(mes)                                                   \
   do {                                                                         \
     helpers::printf(mes);                                                      \
   } while (0)
 #else
-#define B_TREE_DEBUG_MS(mes)                                                   \
+#define B_PLUS_DEBUG_MS(mes)                                                   \
   do {                                                                         \
   } while (0)
 #endif
@@ -25,7 +25,7 @@
 namespace trees {
 template <concepts::Comparable T, typename Data, std::size_t DEGREE,
           template <typename> class Allocator = Allocator>
-class BTree {
+class BPlusTree {
 
 private:
   inline static constexpr std::size_t minKey{DEGREE - 1};
@@ -37,7 +37,7 @@ private:
 
 public:
   class Node {
-    friend BTree;
+    friend BPlusTree;
 
     StaticCircularBuffer<Node*, maxChildren> _children{};
     StaticCircularBuffer<T, maxKey> _keys{};
@@ -191,18 +191,18 @@ public:
   using reference = Data&;
   using rvalue_reference = Data&&;
   using const_reference = const Data&;
-  using self = BTree<T, Data, DEGREE, Allocator>;
+  using self = BPlusTree<T, Data, DEGREE, Allocator>;
 
-  BTree() = default;
-  ~BTree() {
+  BPlusTree() = default;
+  ~BPlusTree() {
     _walk_node_depth_first_postorder(_root, [](Node* node) { delete node; });
   };
 
-  BTree(self& other) {
+  BPlusTree(self& other) {
     other.walk_depth_first_inorder(
         [this](const T& key, reference data) { insert(key, data); });
   };
-  BTree(self&& other) : _root{other._root} { other._root = nullptr; };
+  BPlusTree(self&& other) : _root{other._root} { other._root = nullptr; };
 
   self& operator=(const self& other) {
     self tmp{other};
@@ -313,14 +313,14 @@ public:
   std::pair<const T&, reference> min() { return _min(_root); }
   std::pair<const T&, reference> max() { return _max(_root); }
 
-  friend std::ostream& operator<<(std::ostream& os, const self& btree) {
-    if (!btree._root) {
+  friend std::ostream& operator<<(std::ostream& os, const self& bPlusTree) {
+    if (!bPlusTree._root) {
       return os;
     }
     Queue<Node*> queue{};
     int rowNodeCount{1};
     int nextRowNodeCount{};
-    queue.push_back(btree._root);
+    queue.push_back(bPlusTree._root);
     while (!queue.empty()) {
       Node* node{queue.pop_front()};
       std::size_t i{};

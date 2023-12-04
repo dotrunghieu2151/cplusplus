@@ -109,3 +109,13 @@ target_link_libraries(static-circular-buffer.test
 )
 
 add_test(static-circular-buffer-gtest static-circular-buffer.test)
+
+add_executable(b-plus-tree.test b-plus-tree.test.cpp)
+
+target_link_libraries(b-plus-tree.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(b-plus-tree-gtest b-plus-tree.test)
