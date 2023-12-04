@@ -254,7 +254,7 @@ public:
   value_type pop_front() {
     buffer& headBlock{_map[_head._blockIndex]};
     value_type ele{headBlock.pop_front()};
-    if (headBlock.empty()) {
+    if (headBlock.empty() && _head._blockIndex < _map.size() - 1) {
       ++_head._blockIndex;
     } else if (_head._blockIndex == _tail._blockIndex) {
       --_tail._currentIndex;
@@ -265,7 +265,7 @@ public:
   value_type pop_back() {
     buffer& tailBlock{_map[_tail._blockIndex]};
     value_type ele{tailBlock.pop_back()};
-    if (tailBlock.empty()) {
+    if (tailBlock.empty() && _tail._blockIndex > 0) {
       --_tail._blockIndex;
       _tail._currentIndex = _chunk_size;
     } else {

@@ -16,6 +16,8 @@ public:
   using rvalue_reference = T&&;
 
   class OutOfRangeException : public std::exception {
+    using std::exception::what;
+
   private:
     std::string message;
 
