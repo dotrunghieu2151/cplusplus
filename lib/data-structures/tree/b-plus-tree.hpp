@@ -8,6 +8,7 @@
 #include <queue.hpp>
 #include <static-circular-buffer.hpp>
 #include <utility>
+#include <variant>
 
 #define B_PLUS_DEBUG 0
 
@@ -24,7 +25,7 @@
 
 namespace trees {
 template <concepts::Comparable T, typename Data, std::size_t DEGREE,
-          template <typename> class Allocator = Allocator>
+          concepts::Allocator Allocator = Allocator<T>>
 class BPlusTree {
 
 private:
@@ -35,154 +36,162 @@ private:
   // (maxKey - 1)/ 2 = minKey
   inline static constexpr std::size_t midKeyIndex{DEGREE - 1};
 
-public:
   class Node {
     friend BPlusTree;
 
-    StaticCircularBuffer<Node*, maxChildren> _children{};
+  protected:
     StaticCircularBuffer<T, maxKey> _keys{};
-    StaticCircularBuffer<Data, maxKey> _dataArr{};
 
-  private:
+  public:
     Node() = default;
+    virtual ~Node() = default;
 
   public:
     bool is_full() { return _keys.size() == maxKey; }
     bool has_minimum_key() { return _keys.size() == minKey; }
-    bool has_minimum_children() { return _children.size() == minChildren; }
-    bool is_leaf() { return _children.empty(); }
+    virtual bool is_leaf() = 0;
 
-    // assuming previous node exists and have enough keys
-    void borrow_from_previous(std::size_t index) {
-      // we move the parent key + data at (index - 1) to child at index
-      Node* leftChild{_children[index - 1]};
-      Node* child{_children[index]};
+    virtual std::size_t _get_key_upper_bound_index(const T& key) = 0;
 
-      child->_keys.push_front(_keys[index - 1]);
-      child->_dataArr.push_front(std::move(_dataArr[index - 1]));
+    // split self into a new node with half of the origin node, return the split
+    // key and new node, the old node is modified
+    virtual std::pair<T, Node*> split_self() = 0;
 
-      _keys[index - 1] = leftChild->_keys.pop_back();
-      _dataArr[index - 1] = leftChild->_dataArr.pop_back();
-
-      if (!child->is_leaf()) {
-        // move children too
-        child->_children.push_front(leftChild->_children.pop_back());
+  protected:
+    std::size_t _binary_search_key_upper_bound_index(const T& key,
+                                                     std::size_t min,
+                                                     std::size_t max) {
+      if (min > max) {
+        return min;
       }
-      return;
-    }
-
-    // assuming next node exists and have enough keys
-    void borrow_from_next(std::size_t index) {
-      // we move the parent key + data at index to child at index
-      Node* child{_children[index]};
-      Node* rightChild{_children[index + 1]};
-
-      child->_keys.push_back(_keys[index]);
-      child->_dataArr.push_back(std::move(_dataArr[index]));
-
-      _keys[index] = rightChild->_keys.pop_front();
-      _dataArr[index] = rightChild->_dataArr.pop_front();
-      if (!child->is_leaf()) {
-        // move children too
-        child->_children.push_back(rightChild->_children.pop_front());
-      }
-    }
-
-    // fill child at index with a sufficient number of keys
-    // assuming child at index is at minimum key (t-1)
-    // assuming this node is not leaf
-    void fill(std::size_t index) {
-      if (index > 0 && !_children[index - 1]->has_minimum_key()) {
-        // case 1.1 borrow from neighboring left child
-        borrow_from_previous(index);
-      } else if (index + 1 < _children.size() &&
-                 !_children[index + 1]->has_minimum_key()) {
-        // case 1.2 borrow from neighboring right child
-        borrow_from_next(index);
+      const std::size_t midPoint{std::midpoint(min, max)};
+      if (_keys[midPoint] == key) {
+        return midPoint;
+      } else if (_keys[midPoint] < key) {
+        return _binary_search_key_upper_bound_index(key, ++min, max);
       } else {
-        // case 1.3 merge child at index with either left or right neighboring
-        // child
-        // if right-most child then merge with left, else merge with right
-        merge(index + 1 < _children.size() ? index : index - 1);
+        return _binary_search_key_upper_bound_index(key, min, --max);
       }
-      return;
     }
+  };
 
-    // merge child at index with child at index + 1
-    void merge(std::size_t index) {
-      Node* child{_children[index]};
-      Node* rightChild{_children[index + 1]};
+  class NodeLeaf : public Node {
+    friend BPlusTree;
+    using allocator = typename Allocator::rebind<NodeLeaf>::other;
 
-      // move key at index to left child
-      child->_keys.push_back(_keys[index]);
-      child->_dataArr.push_back(std::move(_dataArr[index]));
+  private:
+    StaticCircularBuffer<Data, maxKey> _dataArr{};
+    NodeLeaf* _next{nullptr};
 
-      // merge with right child
-      child->_keys.insert(child->_keys.size(),
-                          std::make_move_iterator(rightChild->_keys.begin()),
-                          std::make_move_iterator(rightChild->_keys.end()));
-      child->_dataArr.insert(
-          child->_dataArr.size(),
-          std::make_move_iterator(rightChild->_dataArr.begin()),
-          std::make_move_iterator(rightChild->_dataArr.end()));
-      if (!child->is_leaf()) {
-        child->_children.insert(
-            child->_children.size(),
-            std::make_move_iterator(rightChild->_children.begin()),
-            std::make_move_iterator(rightChild->_children.end()));
+  public:
+    NodeLeaf() = default;
+
+    ~NodeLeaf() = default;
+
+    NodeLeaf(const NodeLeaf&) = default;
+
+    NodeLeaf(NodeLeaf&&) = default;
+
+    NodeLeaf& operator=(const NodeLeaf&) = default;
+    NodeLeaf& operator=(NodeLeaf&&) = default;
+
+    bool is_leaf() override { return true; }
+
+    std::size_t _get_key_upper_bound_index(const T& key) override {
+      if (key > this->_keys.back()) {
+        return this->_keys.size();
+      } else if (key <= this->_keys.front()) {
+        return 0;
+      } else {
+        return this->_binary_search_key_upper_bound_index(
+            key, 1, this->_keys.size() - 1);
       }
+    };
 
-      _children.erase(index + 1);
-      _keys.erase(index);
-      _dataArr.erase(index);
-      return;
-    }
-
-    // assuming child at keyIndex is full
-    void splitChild(std::size_t keyIndex, Node* childNode) {
-      Node* newRightNode{new Node{}};
-
+    std::pair<T, Node*> split_self() override {
+      allocator alloc{};
+      NodeLeaf* newRightNode{alloc.allocate(1)};
+      alloc.construct(newRightNode);
+      T splitKey{this->_keys[midKeyIndex]};
       // move keys
       newRightNode->_keys.insert(
-          0,
-          std::make_move_iterator(childNode->_keys.begin() + (midKeyIndex + 1)),
-          std::make_move_iterator(childNode->_keys.end()));
+          0, std::make_move_iterator(this->_keys.begin() + midKeyIndex),
+          std::make_move_iterator(this->_keys.end()));
 
-      childNode->_keys.erase(childNode->_keys.begin() + (midKeyIndex + 1),
-                             childNode->_keys.end());
-      T keyToMoveToParent{childNode->_keys.pop_back()};
+      this->_keys.erase(this->_keys.begin() + midKeyIndex, this->_keys.end());
 
       // move data
       newRightNode->_dataArr.insert(
-          0,
-          std::make_move_iterator(childNode->_dataArr.begin() +
-                                  (midKeyIndex + 1)),
-          std::make_move_iterator(childNode->_dataArr.end()));
+          0, std::make_move_iterator(_dataArr.begin() + midKeyIndex),
+          std::make_move_iterator(_dataArr.end()));
 
-      childNode->_dataArr.erase(childNode->_dataArr.begin() + (midKeyIndex + 1),
-                                childNode->_dataArr.end());
-      Data DataToMoveToParent{childNode->_dataArr.pop_back()};
-      // move children
-      if (!childNode->is_leaf()) {
-        newRightNode->_children.insert(
-            0,
-            std::make_move_iterator(childNode->_children.begin() +
-                                    (midKeyIndex + 1)),
-            std::make_move_iterator(childNode->_children.end()));
+      _dataArr.erase(_dataArr.begin() + midKeyIndex, _dataArr.end());
 
-        childNode->_children.erase(childNode->_children.begin() +
-                                       (midKeyIndex + 1),
-                                   childNode->_children.end());
+      // add next pointer
+      newRightNode->_next = _next;
+      _next = newRightNode;
+
+      return std::make_pair<T, Node*>(std::move(splitKey), newRightNode);
+    }
+  };
+
+  class NodeNonLeaf : public Node {
+    friend BPlusTree;
+
+    using allocator = typename Allocator::rebind<NodeNonLeaf>::other;
+
+  private:
+    StaticCircularBuffer<Node*, maxChildren> _children{};
+
+  public:
+    NodeNonLeaf() = default;
+
+    bool is_leaf() override { return false; }
+    std::size_t _get_key_upper_bound_index(const T& key) override {
+      if (key >= this->_keys.back()) {
+        return this->_keys.size();
+      } else if (key < this->_keys.front()) {
+        return 0;
+      } else {
+        std::size_t keyIndex{this->_binary_search_key_upper_bound_index(
+            key, 1, this->_keys.size() - 1)};
+        return this->_keys[keyIndex] == key ? keyIndex + 1 : keyIndex;
       }
-      // move key to parent
-      _keys.insert(keyIndex, std::move(keyToMoveToParent));
-      _dataArr.insert(keyIndex, std::move(DataToMoveToParent));
-      _children.insert(keyIndex + 1, newRightNode);
+    };
+
+    std::pair<T, Node*> split_self() override {
+      allocator alloc{};
+      NodeNonLeaf* newRightNode{alloc.allocate(1)};
+      alloc.construct(newRightNode);
+
+      // move keys
+      newRightNode->_keys.insert(
+          0, std::make_move_iterator(this->_keys.begin() + (midKeyIndex + 1)),
+          std::make_move_iterator(this->_keys.end()));
+
+      this->_keys.erase(this->_keys.begin() + (midKeyIndex + 1),
+                        this->_keys.end());
+
+      T splitKey{this->_keys.pop_back()};
+
+      // move children
+      newRightNode->_children.insert(
+          0, std::make_move_iterator(_children.begin() + (midKeyIndex + 1)),
+          std::make_move_iterator(_children.end()));
+
+      _children.erase(_children.begin() + (midKeyIndex + 1), _children.end());
+
+      return std::make_pair<T, Node*>(std::move(splitKey), newRightNode);
+    }
+
+    void splitChild(std::size_t keyIndex, Node* childNode) {
+      auto [key, newNode] = childNode->split_self();
+      this->_keys.insert(keyIndex, std::move(key));
+      _children.insert(keyIndex + 1, newNode);
     }
   };
 
 private:
-  Allocator<Node> _allocator{};
   Node* _root{nullptr};
 
 public:
@@ -195,7 +204,13 @@ public:
 
   BPlusTree() = default;
   ~BPlusTree() {
-    _walk_node_depth_first_postorder(_root, [](Node* node) { delete node; });
+    _walk_node_depth_first_postorder(_root, [this](Node* node) {
+      if (node->is_leaf()) {
+        free_leaf_node(static_cast<NodeLeaf*>(node));
+      } else {
+        free_non_leaf_node(static_cast<NodeNonLeaf*>(node));
+      }
+    });
   };
 
   BPlusTree(self& other) {
@@ -223,19 +238,17 @@ public:
 
   friend void swap(self& o1, self& o2) noexcept { o1.swap(o2); }
 
-  pointer search(T key) { return _root ? _search(_root, key) : nullptr; }
-
-  Node* searchNode(T key) { return _root ? _searchNode(_root, key) : nullptr; }
+  pointer search(const T& key) { return _root ? _search(_root, key) : nullptr; }
 
   template <typename U> void insert(const T& key, U&& data) {
     if (!_root) {
-      _root = new Node{};
+      _root = alloc_leaf_node();
       _root->_keys.push_back(key);
-      _root->_dataArr.push_back(std::forward<U>(data));
+      static_cast<NodeLeaf*>(_root)->_dataArr.push_back(std::forward<U>(data));
     } else {
       if (_root->is_full()) {
         // we split root, tree will increase height
-        Node* newRoot{new Node{}};
+        NodeNonLeaf* newRoot{alloc_non_leaf_node()};
         newRoot->_children.push_back(_root);
         newRoot->splitChild(0, _root);
         _root = newRoot;
@@ -244,25 +257,25 @@ public:
     }
   }
 
-  void remove(const T& key) {
-    if (!_root) {
-      return;
-    }
+  // void remove(const T& key) {
+  //   if (!_root) {
+  //     return;
+  //   }
 
-    _delete(_root, key);
+  //   _delete(_root, key);
 
-    if (_root->_keys.empty()) {
-      // the tree shrinks
-      Node* tmpRoot{_root};
-      if (tmpRoot->is_leaf()) {
-        _root = nullptr;
-      } else {
-        _root = tmpRoot->_children.pop_back();
-      }
-      delete tmpRoot;
-    }
-    return;
-  }
+  //   if (_root->_keys.empty()) {
+  //     // the tree shrinks
+  //     Node* tmpRoot{_root};
+  //     if (tmpRoot->is_leaf()) {
+  //       _root = nullptr;
+  //     } else {
+  //       _root = tmpRoot->_children.pop_back();
+  //     }
+  //     delete tmpRoot;
+  //   }
+  //   return;
+  // }
 
   void walk_breadth_first(std::function<void(const T&, reference)> fn) {
     if (!_root) {
@@ -292,22 +305,6 @@ public:
     _walk_depth_first_inorder(_root, fn);
   }
 
-  // preorder traverse
-  void walk_depth_first_preorder(std::function<void(const T&, reference)> fn) {
-    if (!_root) {
-      return;
-    }
-    _walk_depth_first_preorder(_root, fn);
-  }
-
-  // postorder traverse
-  void walk_depth_first_postorder(std::function<void(const T&, reference)> fn) {
-    if (!_root) {
-      return;
-    }
-    _walk_depth_first_postorder(_root, fn);
-  }
-
   int height() { return _height(_root); }
 
   std::pair<const T&, reference> min() { return _min(_root); }
@@ -331,10 +328,13 @@ public:
       os << "]  ";
       --rowNodeCount;
       if (!node->is_leaf()) {
-        for (std::size_t index{}; index < node->_children.size(); ++index) {
-          queue.push_back(node->_children[index]);
+        for (std::size_t index{};
+             index < static_cast<NodeNonLeaf*>(node)->_children.size();
+             ++index) {
+          queue.push_back(static_cast<NodeNonLeaf*>(node)->_children[index]);
         }
-        nextRowNodeCount += node->_children.size();
+        nextRowNodeCount +=
+            static_cast<int>(static_cast<NodeNonLeaf*>(node)->_children.size());
       }
       if (rowNodeCount == 0) {
         os << "\n";
@@ -346,220 +346,185 @@ public:
   };
 
 private:
-  // assuming node is not leaf
-  std::pair<const T&, reference> _get_predecessor(Node* node,
-                                                  std::size_t keyIndex) const {
-    return _max(node->_children[keyIndex]);
+  NodeLeaf* alloc_leaf_node() {
+    typename NodeLeaf::allocator allocator{};
+    NodeLeaf* newNode{allocator.allocate(1)};
+    allocator.construct(newNode);
+    return newNode;
+  }
+
+  void free_leaf_node(NodeLeaf* node) {
+    typename NodeLeaf::allocator allocator{};
+    allocator.destruct(node);
+    allocator.deallocate(node);
+  }
+
+  NodeNonLeaf* alloc_non_leaf_node() {
+    typename NodeNonLeaf::allocator allocator{};
+    NodeNonLeaf* newNode{allocator.allocate(1)};
+    allocator.construct(newNode);
+    return newNode;
+  }
+
+  void free_non_leaf_node(NodeNonLeaf* node) {
+    typename NodeNonLeaf::allocator allocator{};
+    allocator.destruct(node);
+    allocator.deallocate(node);
   }
 
   // assuming node is not leaf
-  std::pair<const T&, reference> _get_successor(Node* node,
-                                                std::size_t keyIndex) const {
-    return _min(node->_children[keyIndex + 1]);
-  }
+  // std::pair<const T&, reference> _get_predecessor(Node* node,
+  //                                                 std::size_t keyIndex) const
+  //                                                 {
+  //   return _max(node->_children[keyIndex]);
+  // }
 
-  void _delete(Node* node, const T& key) {
-    std::size_t keyIndex{_find_key_upper_bound_index(node, key)};
-    if (node->_keys[keyIndex] == key) {
-      if (node->is_leaf()) {
-        // case 1
-        node->_keys.erase(keyIndex);
-        node->_dataArr.erase(keyIndex);
-      } else {
-        // case 2
-        // check if left child has spare keys, if so delete key and swap it with
-        // the the predecessor key
-        if (!node->_children[keyIndex]->has_minimum_key()) {
-          auto [predecessorKey, predecessorData] =
-              _get_predecessor(node, keyIndex);
-          node->_keys[keyIndex] = predecessorKey;
-          node->_dataArr[keyIndex] = std::move(predecessorData);
-          _delete(node->_children[keyIndex], predecessorKey);
-        } else if (!node->_children[keyIndex + 1]->has_minimum_key()) {
-          // check if right child has spare keys, if so delete key and
-          // swap it with the the successor key
-          auto [successorKey, successorData] = _get_successor(node, keyIndex);
-          node->_keys[keyIndex] = successorKey;
-          node->_dataArr[keyIndex] = std::move(successorData);
-          _delete(node->_children[keyIndex + 1], successorKey);
-        } else {
-          // if both children have minimum keys => merge these 2 children and
-          // k total key is 2t - 1, then delete k from the new node => 2t - 2
-          node->merge(keyIndex);
-          _delete(node->_children[keyIndex], key);
-        }
-      }
-    } else {
-      if (node->is_leaf()) {
-        // no key is found
-        return;
-      } else {
-        if (node->_children[keyIndex]->has_minimum_key()) {
-          // case 3: pro-active fill child with sufficient keys
-          node->fill(keyIndex);
-        }
-        bool isKeyAtLastChildAndChildIsMerged(keyIndex >
-                                              node->_children.size() - 1);
-        std::size_t childIndex(isKeyAtLastChildAndChildIsMerged ? keyIndex - 1
-                                                                : keyIndex);
-        _delete(node->_children[childIndex], key);
-      }
-    }
-  }
+  // assuming node is not leaf
+  // std::pair<const T&, reference> _get_successor(Node* node,
+  //                                               std::size_t keyIndex) const {
+  //   return _min(node->_children[keyIndex + 1]);
+  // }
+
+  // void _delete(Node* node, const T& key) {
+  //   std::size_t keyIndex{_find_key_upper_bound_index(node, key)};
+  //   if (node->_keys[keyIndex] == key) {
+  //     if (node->is_leaf()) {
+  //       // case 1
+  //       node->_keys.erase(keyIndex);
+  //       node->_dataArr.erase(keyIndex);
+  //     } else {
+  //       // case 2
+  //       // check if left child has spare keys, if so delete key and swap it
+  //       with
+  //       // the the predecessor key
+  //       if (!node->_children[keyIndex]->has_minimum_key()) {
+  //         auto [predecessorKey, predecessorData] =
+  //             _get_predecessor(node, keyIndex);
+  //         node->_keys[keyIndex] = predecessorKey;
+  //         node->_dataArr[keyIndex] = std::move(predecessorData);
+  //         _delete(node->_children[keyIndex], predecessorKey);
+  //       } else if (!node->_children[keyIndex + 1]->has_minimum_key()) {
+  //         // check if right child has spare keys, if so delete key and
+  //         // swap it with the the successor key
+  //         auto [successorKey, successorData] = _get_successor(node,
+  //         keyIndex); node->_keys[keyIndex] = successorKey;
+  //         node->_dataArr[keyIndex] = std::move(successorData);
+  //         _delete(node->_children[keyIndex + 1], successorKey);
+  //       } else {
+  //         // if both children have minimum keys => merge these 2 children and
+  //         // k total key is 2t - 1, then delete k from the new node => 2t - 2
+  //         node->merge(keyIndex);
+  //         _delete(node->_children[keyIndex], key);
+  //       }
+  //     }
+  //   } else {
+  //     if (node->is_leaf()) {
+  //       // no key is found
+  //       return;
+  //     } else {
+  //       if (node->_children[keyIndex]->has_minimum_key()) {
+  //         // case 3: pro-active fill child with sufficient keys
+  //         node->fill(keyIndex);
+  //       }
+  //       bool isKeyAtLastChildAndChildIsMerged(keyIndex >
+  //                                             node->_children.size() - 1);
+  //       std::size_t childIndex(isKeyAtLastChildAndChildIsMerged ? keyIndex -
+  //       1
+  //                                                               : keyIndex);
+  //       _delete(node->_children[childIndex], key);
+  //     }
+  //   }
+  // }
 
   template <typename U>
   void _insert_non_root(Node* node, const T& key, U&& data) {
-    std::size_t keyIndex{_find_key_upper_bound_index(node, key)};
+    std::size_t keyIndex{node->_get_key_upper_bound_index(key)};
     if (node->is_leaf()) {
       // insert because we ensure there is always extra space by pro-actively
       // spliting nodes
       node->_keys.insert(keyIndex, key);
-      node->_dataArr.insert(keyIndex, std::forward<U>(data));
+      static_cast<NodeLeaf*>(node)->_dataArr.insert(keyIndex,
+                                                    std::forward<U>(data));
     } else {
       // non-leaf node, need to check
       // if node is full =>  split
       // else find next child to traverse
-      Node* childNode{node->_children[keyIndex]};
+      Node* childNode{static_cast<NodeNonLeaf*>(node)->_children[keyIndex]};
       if (childNode->is_full()) {
-        node->splitChild(keyIndex, childNode);
+        static_cast<NodeNonLeaf*>(node)->splitChild(keyIndex, childNode);
         // find the node which the key belongs to (because we split it in 2)
         if (key > node->_keys[keyIndex]) {
           ++keyIndex;
         }
       }
-      return _insert_non_root(node->_children[keyIndex], key,
-                              std::forward<U>(data));
-    }
-  }
-
-  std::size_t _find_key_upper_bound_index(Node* node, const T& key) {
-    if (key > node->_keys.back()) {
-      return node->_keys.size();
-    } else if (key <= node->_keys.front()) {
-      return 0;
-    } else {
-      return _binary_search_key_upper_bound_index(node, key, 1,
-                                                  node->_keys.size() - 1);
-    }
-  }
-  std::size_t _binary_search_key_upper_bound_index(Node* node, const T& key,
-                                                   std::size_t min,
-                                                   std::size_t max) {
-    if (min > max) {
-      return min;
-    }
-    const std::size_t midPoint{std::midpoint(min, max)};
-    if (node->_keys[midPoint] == key) {
-      return midPoint;
-    } else if (node->_keys[midPoint] < key) {
-      return _binary_search_key_upper_bound_index(node, key, ++min, max);
-    } else {
-      return _binary_search_key_upper_bound_index(node, key, min, --max);
+      return _insert_non_root(
+          static_cast<NodeNonLeaf*>(node)->_children[keyIndex], key,
+          std::forward<U>(data));
     }
   }
 
   pointer _search(Node* node, const T& key) {
-    std::size_t keyIndex{_find_key_upper_bound_index(node, key)};
-
-    if (keyIndex < node->_keys.size() && node->_keys[keyIndex] == key) {
-      // we have found our key / data
-      return &node->_dataArr[keyIndex];
-    }
-    // i is the index of the upper bound key of k
+    std::size_t keyIndex{node->_get_key_upper_bound_index(key)};
     if (node->is_leaf()) {
-      // no child to keep searching, we end here
-      return nullptr;
+      return node->_keys[keyIndex] == key
+                 ? &static_cast<NodeLeaf*>(node)->_dataArr[keyIndex]
+                 : nullptr;
     }
-    // there is a right-most child, let's drill down.
-    return _search(node->_children[keyIndex], key);
-  }
-  Node* _searchNode(Node* node, const T& key) {
-    std::size_t keyIndex{_find_key_upper_bound_index(node, key)};
-
-    if (keyIndex < node->_keys.size() && node->_keys[keyIndex] == key) {
-      return node;
-    }
-    if (node->is_leaf()) {
-      return nullptr;
-    }
-    return searchNode(node->_children[keyIndex], key);
+    return _search(static_cast<NodeNonLeaf*>(node)->_children[keyIndex], key);
   }
 
   void _walk_depth_first_inorder(
       Node* node, const std::function<void(const T&, reference)>& fn) {
-    if (!node->is_leaf()) {
-      std::size_t i{};
-      while (i < node->_keys.size()) {
-        _walk_depth_first_inorder(node->_children[i], fn);
-        fn(node->_keys[i], node->_dataArr[i]);
-        ++i;
+    NodeLeaf* leafNode{_min_node(node)};
+    while (leafNode) {
+      for (std::size_t i{}; i < leafNode->_keys.size(); ++i) {
+        fn(leafNode->_keys[i], leafNode->_dataArr[i]);
       }
-      _walk_depth_first_inorder(node->_children[i], fn);
-    } else {
-      for (std::size_t i{}; i < node->_keys.size(); ++i) {
-        fn(node->_keys[i], node->_dataArr[i]);
-      }
-    }
-  }
-
-  void _walk_depth_first_preorder(
-      Node* node, const std::function<void(const T&, reference)>& fn) {
-    if (!node->is_leaf()) {
-      std::size_t i{};
-      while (i < node->_keys.size()) {
-        fn(node->_keys[i], node->_dataArr[i]);
-        _walk_depth_first_preorder(node->_children[i], fn);
-        ++i;
-      }
-      _walk_depth_first_preorder(node->_children[i], fn);
-    } else {
-      for (std::size_t i{}; i < node->_keys.size(); ++i) {
-        fn(node->_keys[i], node->_dataArr[i]);
-      }
-    }
-  }
-
-  void _walk_depth_first_postorder(
-      Node* node, const std::function<void(const T&, reference)>& fn) {
-    if (!node->is_leaf()) {
-      for (std::size_t i{}; i < node->_children.size(); ++i) {
-        _walk_depth_first_postorder(node->_children[i], fn);
-      }
-      for (std::size_t i{}; i < node->_keys.size(); ++i) {
-        fn(node->_keys[i], node->_dataArr[i]);
-      }
-    } else {
-      for (std::size_t i{}; i < node->_keys.size(); ++i) {
-        fn(node->_keys[i], node->_dataArr[i]);
-      }
+      leafNode = leafNode->_next;
     }
   }
 
   int _height(Node* node) {
-    return node->is_leaf() ? 0 : _height(node->_children[0]) + 1;
+    return node->is_leaf()
+               ? 0
+               : _height(static_cast<NodeNonLeaf*>(node)->_children[0]) + 1;
+  }
+
+  NodeLeaf* _min_node(Node* node) const {
+    if (!node) {
+      return nullptr;
+    }
+    if (node->is_leaf()) {
+      return static_cast<NodeLeaf*>(node);
+    } else {
+      return _min_node(static_cast<NodeNonLeaf*>(node)->_children[0]);
+    }
   }
 
   std::pair<const T&, reference> _min(Node* node) const {
     if (node->is_leaf()) {
-      return {node->_keys[0], node->_dataArr[0]};
+      return {node->_keys[0], static_cast<NodeLeaf*>(node)->_dataArr[0]};
     } else {
-      return _min(node->_children[0]);
+      return _min(static_cast<NodeNonLeaf*>(node)->_children[0]);
     }
   }
 
   std::pair<const T&, reference> _max(Node* node) const {
     if (node->is_leaf()) {
-      return {node->_keys.back(), node->_dataArr.back()};
+      return {node->_keys.back(),
+              static_cast<NodeLeaf*>(node)->_dataArr.back()};
     } else {
-      return _max(node->_children.back());
+      return _max(static_cast<NodeNonLeaf*>(node)->_children.back());
     }
   }
 
   void _walk_node_depth_first_postorder(Node* node,
                                         const std::function<void(Node*)>& fn) {
     if (!node->is_leaf()) {
-      for (std::size_t i{}; i < node->_children.size(); ++i) {
-        _walk_node_depth_first_postorder(node->_children[i], fn);
+      for (std::size_t i{};
+           i < static_cast<NodeNonLeaf*>(node)->_children.size(); ++i) {
+        _walk_node_depth_first_postorder(
+            static_cast<NodeNonLeaf*>(node)->_children[i], fn);
       }
       fn(node);
     } else {

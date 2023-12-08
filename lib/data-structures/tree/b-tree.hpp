@@ -223,9 +223,11 @@ public:
 
   friend void swap(self& o1, self& o2) noexcept { o1.swap(o2); }
 
-  pointer search(T key) { return _root ? _search(_root, key) : nullptr; }
+  pointer search(const T& key) { return _root ? _search(_root, key) : nullptr; }
 
-  Node* searchNode(T key) { return _root ? _searchNode(_root, key) : nullptr; }
+  Node* searchNode(const T& key) {
+    return _root ? _searchNode(_root, key) : nullptr;
+  }
 
   template <typename U> void insert(const T& key, U&& data) {
     if (!_root) {

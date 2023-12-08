@@ -34,13 +34,14 @@ public:
   pointer address(const_reference r) const { return &r; };
 
   // memory allocation
-  pointer allocate(size_type count) {
+  pointer allocate(size_type count, const void* = 0) {
     return reinterpret_cast<pointer>(
         ::operator new(count * sizeof(value_type)));
   };
   void deallocate(pointer p, size_type = 0) { ::operator delete(p); };
 
   // ctor / detor
+  void construct(pointer p) { new (p) value_type{}; };
   void construct(pointer p, const_reference t) { new (p) value_type{t}; };
   void construct(pointer p, rvalue_reference t) {
     new (p) value_type{std::move(t)};
