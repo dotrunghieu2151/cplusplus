@@ -186,6 +186,15 @@ TEST_F(ContainerTest, BPlusTreeMax) {
   EXPECT_EQ(valuePair.second.num(), 90);
 }
 
+TEST_F(ContainerTest, BplusTreeDeleteAll) {
+  for (int i{static_cast<int>(_flatBTree.size() - 1)}; i >= 0; --i) {
+    _btree.remove(_flatBTree[static_cast<std::size_t>(i)]);
+    _flatBTree.pop_back();
+    compareBtreeEqualFlat();
+  }
+  EXPECT_EQ(_btree.height(), 0);
+}
+
 TEST_F(ContainerDeleteTest, BPlusTreeDelete) {
   Vector flatBTree{5, 15, 25, 30, 35, 40, 45, 55};
   _btree.remove(20);

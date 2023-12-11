@@ -272,6 +272,8 @@ private:
                 static_cast<NodeLeaf*>(rightChild)->_dataArr.begin()),
             std::make_move_iterator(
                 static_cast<NodeLeaf*>(rightChild)->_dataArr.end()));
+        static_cast<NodeLeaf*>(child)->_next =
+            static_cast<NodeLeaf*>(rightChild)->_next;
       }
       this->_children.erase(index + 1);
       this->_keys.erase(index);

@@ -54,6 +54,16 @@ public:
     EXPECT_EQ(i, this->_flatBTree.size());
   }
 
+  void compareBtreeEqualFlat(const Vector<int>& flatBTree) {
+    std::size_t i{};
+    _btree.walk_depth_first_inorder(
+        [this, &i, &flatBTree](int, helpers::Test& data) {
+          EXPECT_EQ(data.num(), flatBTree[i]);
+          ++i;
+        });
+    EXPECT_EQ(i, flatBTree.size());
+  }
+
 protected:
   void SetUp() override {
     // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -152,6 +162,15 @@ TEST_F(ContainerTest, BtreeMax) {
   auto valuePair{_btree.max()};
   EXPECT_EQ(valuePair.first, 9);
   EXPECT_EQ(valuePair.second.num(), 9);
+}
+
+TEST_F(ContainerDeleteTest, BTreeDeleteAll) {
+  for (int i{static_cast<int>(_flatBTree.size() - 1)}; i >= 0; --i) {
+    _btree.remove(_flatBTree[static_cast<std::size_t>(i)]);
+    _flatBTree.pop_back();
+    compareBtreeEqualFlat();
+  }
+  EXPECT_EQ(_btree.height(), 0);
 }
 
 TEST_F(ContainerDeleteTest, BtreeDelete) {

@@ -195,7 +195,9 @@ public:
 
   BTree() = default;
   ~BTree() {
-    _walk_node_depth_first_postorder(_root, [](Node* node) { delete node; });
+    if (_root) {
+      _walk_node_depth_first_postorder(_root, [](Node* node) { delete node; });
+    }
   };
 
   BTree(self& other) {
@@ -538,7 +540,7 @@ private:
   }
 
   int _height(Node* node) {
-    return node->is_leaf() ? 0 : _height(node->_children[0]) + 1;
+    return (!node || node->is_leaf()) ? 0 : _height(node->_children[0]) + 1;
   }
 
   std::pair<const T&, reference> _min(Node* node) const {
