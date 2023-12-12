@@ -109,9 +109,7 @@ private:
     };
 
     std::pair<T, Node*> split_self() override {
-      allocator alloc{};
-      NodeLeaf* newRightNode{alloc.allocate(1)};
-      alloc.construct(newRightNode);
+      NodeLeaf* newRightNode{new NodeLeaf{}};
       T splitKey{this->_keys[midKeyIndex]};
       // move keys
       newRightNode->_keys.insert(
@@ -160,9 +158,7 @@ private:
     };
 
     std::pair<T, Node*> split_self() override {
-      allocator alloc{};
-      NodeNonLeaf* newRightNode{alloc.allocate(1)};
-      alloc.construct(newRightNode);
+      NodeNonLeaf* newRightNode{new NodeNonLeaf{}};
 
       // move keys
       newRightNode->_keys.insert(
@@ -276,6 +272,7 @@ private:
             static_cast<NodeLeaf*>(rightChild)->_next;
       }
       this->_children.erase(index + 1);
+      delete rightChild;
       this->_keys.erase(index);
       return;
     }
@@ -309,13 +306,8 @@ public:
   BPlusTree() = default;
   ~BPlusTree() {
     if (_root) {
-      _walk_node_depth_first_postorder(_root, [this](Node* node) {
-        if (node->is_leaf()) {
-          free_leaf_node(static_cast<NodeLeaf*>(node));
-        } else {
-          free_non_leaf_node(static_cast<NodeNonLeaf*>(node));
-        }
-      });
+      _walk_node_depth_first_postorder(_root,
+                                       [this](Node* node) { delete node; });
     }
   };
 
@@ -377,13 +369,13 @@ public:
 
   template <typename U> void insert(const T& key, U&& data) {
     if (!_root) {
-      _root = alloc_leaf_node();
+      _root = new NodeLeaf{};
       _root->_keys.push_back(key);
       static_cast<NodeLeaf*>(_root)->_dataArr.push_back(std::forward<U>(data));
     } else {
       if (_root->is_full()) {
         // we split root, tree will increase height
-        NodeNonLeaf* newRoot{alloc_non_leaf_node()};
+        NodeNonLeaf* newRoot{new NodeNonLeaf{}};
         newRoot->_children.push_back(_root);
         newRoot->splitChild(0, _root);
         _root = newRoot;
@@ -481,45 +473,6 @@ public:
   };
 
 private:
-  NodeLeaf* alloc_leaf_node() {
-    typename NodeLeaf::allocator allocator{};
-    NodeLeaf* newNode{allocator.allocate(1)};
-    allocator.construct(newNode);
-    return newNode;
-  }
-
-  void free_leaf_node(NodeLeaf* node) {
-    typename NodeLeaf::allocator allocator{};
-    allocator.destruct(node);
-    allocator.deallocate(node);
-  }
-
-  NodeNonLeaf* alloc_non_leaf_node() {
-    typename NodeNonLeaf::allocator allocator{};
-    NodeNonLeaf* newNode{allocator.allocate(1)};
-    allocator.construct(newNode);
-    return newNode;
-  }
-
-  void free_non_leaf_node(NodeNonLeaf* node) {
-    typename NodeNonLeaf::allocator allocator{};
-    allocator.destruct(node);
-    allocator.deallocate(node);
-  }
-
-  // assuming node is not leaf
-  // std::pair<const T&, reference> _get_predecessor(Node* node,
-  //                                                 std::size_t keyIndex) const
-  //                                                 {
-  //   return _max(node->_children[keyIndex]);
-  // }
-
-  // assuming node is not leaf
-  // std::pair<const T&, reference> _get_successor(Node* node,
-  //                                               std::size_t keyIndex) const {
-  //   return _min(node->_children[keyIndex + 1]);
-  // }
-
   void _delete(Node* node, const T& key,
                NodeNonLeaf* nodeNoneLeafWithKey = nullptr,
                std::size_t keyIndexInNodeNonLeaf = 0) {

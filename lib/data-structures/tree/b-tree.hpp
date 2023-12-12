@@ -133,6 +133,7 @@ public:
       }
 
       _children.erase(index + 1);
+      delete rightChild;
       _keys.erase(index);
       _dataArr.erase(index);
       return;
