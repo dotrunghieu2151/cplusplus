@@ -38,9 +38,6 @@ Array<T, N>::Array(std::initializer_list<T> list) : Array() {
 
 template <typename T, std::size_t N> Array<T, N>::~Array() {
   helpers::printf("Array Dtor");
-  for (std::size_t i{}; i < N; ++i) {
-    _elements[i].~T();
-  }
 }
 
 template <typename T, std::size_t N>
@@ -57,7 +54,6 @@ Array<T, N>& Array<T, N>::operator=(const Array<T, N>& copy) {
   helpers::printf("Array copy");
 
   for (std::size_t index{}; index < N; ++index) {
-    _elements[index].~T();
     _elements[index] = copy._elements[index];
   }
   return *this;
@@ -77,7 +73,6 @@ Array<T, N>& Array<T, N>::operator=(Array<T, N>&& move) noexcept {
   helpers::printf("Array Move assignment");
 
   for (std::size_t index{}; index < N; ++index) {
-    _elements[index].~T();
     _elements[index] = std::move(move._elements[index]);
   }
   return *this;

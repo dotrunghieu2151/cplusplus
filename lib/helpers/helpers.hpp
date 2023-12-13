@@ -37,8 +37,10 @@ public:
   }
   ~Test() {
     HELPER_DEBUG_MS("Destructor called");
-    delete _ptr;
-    _ptr = nullptr;
+    if (_ptr) {
+      delete _ptr;
+      _ptr = nullptr;
+    }
   }
 
   Test(const Test& copy) : _num{copy._num} {

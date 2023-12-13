@@ -223,7 +223,6 @@ public:
   iterator erase(iterator start, iterator end) {
     std::size_t distance{static_cast<std::size_t>(std::distance(start, end))};
     for (iterator i{start}; i != end; ++i) {
-      (*i).~T();
       (*i) = std::move(*(start + distance));
     }
     _tail = distance > _tail ? N - (distance - _tail) : _tail - distance;
@@ -232,7 +231,6 @@ public:
   }
 
   iterator erase(iterator pos) {
-    (*pos).~T();
     for (iterator i{pos}; i != end(); ++i) {
       (*i) = std::move(*(i + 1));
     }
@@ -242,7 +240,6 @@ public:
   }
 
   iterator erase(std::size_t index) {
-    (*this)[index].~T();
     for (std::size_t i{index}; i < _size - 1; ++i) {
       (*this)[i] = std::move((*this)[i + 1]);
     }
