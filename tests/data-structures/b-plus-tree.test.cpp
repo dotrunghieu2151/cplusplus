@@ -6,6 +6,7 @@
 #include <random.hpp>
 #include <string>
 #include <string_view>
+#include <timer.hpp>
 #include <tree.hpp>
 #include <utility>
 #include <vector.hpp>
@@ -27,11 +28,10 @@ public:
 
   void compareBtreeEqualFlat(const Vector<int>& flatBTree) {
     std::size_t i{};
-    _btree.walk_depth_first_inorder(
-        [this, &i, &flatBTree](int, helpers::Test& data) {
-          EXPECT_EQ(data.num(), flatBTree[i]);
-          ++i;
-        });
+    _btree.walk_depth_first_inorder([&i, &flatBTree](int, helpers::Test& data) {
+      EXPECT_EQ(data.num(), flatBTree[i]);
+      ++i;
+    });
     EXPECT_EQ(i, flatBTree.size());
   }
 
@@ -97,11 +97,10 @@ public:
 
   void compareBtreeEqualFlat(const Vector<int>& flatBTree) {
     std::size_t i{};
-    _btree.walk_depth_first_inorder(
-        [this, &i, &flatBTree](int, helpers::Test& data) {
-          EXPECT_EQ(data.num(), flatBTree[i]);
-          ++i;
-        });
+    _btree.walk_depth_first_inorder([&i, &flatBTree](int, helpers::Test& data) {
+      EXPECT_EQ(data.num(), flatBTree[i]);
+      ++i;
+    });
     EXPECT_EQ(i, flatBTree.size());
   }
 
@@ -282,4 +281,15 @@ TEST_F(ContainerDeleteTest, BPlusTreeDelete) {
   EXPECT_EQ(_btree.height(), 0);
 
   std::cout << _btree << "\n";
+}
+
+TEST(PerfTest, BPlusTree) {
+  trees::BPlusTree<int, int, 3> tree{};
+  Timer timer{};
+  for (int i{}; i < 1000000; ++i) {
+    tree.insert(i, i);
+  }
+  std::cout << timer.elapsed() << "\n";
+  timer.reset();
+  tree.search(6789);
 }

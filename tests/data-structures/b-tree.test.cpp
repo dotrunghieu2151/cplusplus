@@ -56,11 +56,10 @@ public:
 
   void compareBtreeEqualFlat(const Vector<int>& flatBTree) {
     std::size_t i{};
-    _btree.walk_depth_first_inorder(
-        [this, &i, &flatBTree](int, helpers::Test& data) {
-          EXPECT_EQ(data.num(), flatBTree[i]);
-          ++i;
-        });
+    _btree.walk_depth_first_inorder([&i, &flatBTree](int, helpers::Test& data) {
+      EXPECT_EQ(data.num(), flatBTree[i]);
+      ++i;
+    });
     EXPECT_EQ(i, flatBTree.size());
   }
 
