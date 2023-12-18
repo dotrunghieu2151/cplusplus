@@ -1,5 +1,7 @@
 #pragma once
+
 #include <algorithm>
+#include <allocator.hpp>
 #include <concept.hpp>
 #include <functional>
 #include <helpers.hpp>
@@ -20,17 +22,20 @@
 #endif
 
 namespace trees {
-template <concepts::Comparable T> class AVLTree {
+template <concepts::Comparable T, typename Data,
+          concepts::Allocator Allocator = Allocator<T>>
+class AVLTree {
 private:
   struct Node;
 
 public:
-  using value_type = T;
-  using pointer = T*;
-  using reference = T&;
-  using rvalue_reference = T&&;
-  using const_reference = const T&;
-  using self = AVLTree<T>;
+  using key_type = T;
+  using value_type = Data;
+  using pointer = Data*;
+  using reference = Data&;
+  using rvalue_reference = Data&&;
+  using const_reference = const Data&;
+  using self = AVLTree<T, Data, Allocator>;
 
   AVLTree() = default;
   ~AVLTree() {
@@ -38,7 +43,8 @@ public:
   };
 
   AVLTree(self& other) {
-    other.walk_depth_first_preorder([this](reference ele) { push(ele); });
+    other.walk_depth_first_preorder(
+        [this](const key_type& key, reference ele) { push(key, ele); });
   };
   AVLTree(self&& other) : _root{other._root} { other._root = nullptr; };
 
@@ -54,13 +60,15 @@ public:
     return *this;
   };
 
-  void push(const_reference ele) { _root = _push(_root, ele); };
-  void push(rvalue_reference ele) { _root = _push(_root, std::move(ele)); };
+  template <std::same_as<key_type> Key, std::same_as<value_type> Value>
+  void push(Key&& key, Value&& value) {
+    _root = _push(_root, std::forward(key), std::forward(value));
+  };
 
-  void remove(const_reference ele) { _root = _delete(_root, ele); };
+  void remove(const key_type& key) { _root = _delete(_root, key); };
 
-  pointer search(const_reference ele) {
-    Node* result = _search(ele, _root);
+  pointer search(const key_type& key) {
+    Node* result = _search(_root, key);
     return result ? &(result->value) : nullptr;
   };
 
@@ -74,27 +82,27 @@ public:
     return result ? &(result->value) : nullptr;
   };
 
-  pointer get_next_inorder(const_reference ele) {
-    Node* node{_inorder_successor(_root, ele)};
+  pointer get_next_inorder(const key_type& key) {
+    Node* node{_inorder_successor(_root, key)};
     return node ? &(node->value) : nullptr;
   }
 
-  pointer get_previous_inorder(const_reference ele) {
-    Node* node{_inorder_predecessor(_root, ele)};
+  pointer get_previous_inorder(const key_type& key) {
+    Node* node{_inorder_predecessor(_root, key)};
     return node ? &(node->value) : nullptr;
   }
 
   int height() { return _height(_root); }
 
-  void walk_breadth_first(std::function<void(reference)> fn) {
-    Queue<Node*> queue(5);
+  void walk_breadth_first(std::function<void(const key_type&, reference)> fn) {
     if (!_root) {
       return;
     }
+    Queue<Node*> queue(5);
     queue.push_back(_root);
     while (!queue.empty()) {
       Node* current{queue.pop_front()};
-      fn(current->value);
+      fn(current->key, current->value);
       if (current->left) {
         queue.push_back(current->left);
       }
@@ -104,16 +112,19 @@ public:
     }
   }
 
-  void walk_depth_first_preorder(std::function<void(reference)> fn) {
-    _walk_preorder(_root, [&fn](Node* node) { fn(node->value); });
+  void walk_depth_first_preorder(
+      std::function<void(const key_type&, reference)> fn) {
+    _walk_preorder(_root, [&fn](Node* node) { fn(node->key, node->value); });
   }
 
-  void walk_depth_first_inorder(std::function<void(reference)> fn) {
-    _walk_inorder(_root, [&fn](Node* node) { fn(node->value); });
+  void
+  walk_depth_first_inorder(std::function<void(const key_type&, reference)> fn) {
+    _walk_inorder(_root, [&fn](Node* node) { fn(node->key, node->value); });
   }
 
-  void walk_depth_first_postorder(std::function<void(reference)> fn) {
-    _walk_postorder(_root, [&fn](Node* node) { fn(node->value); });
+  void walk_depth_first_postorder(
+      std::function<void(const key_type&, reference)> fn) {
+    _walk_postorder(_root, [&fn](Node* node) { fn(node->key, node->value); });
   }
 
   bool is_binary_search_tree() { return _is_bst(_root, nullptr, nullptr); }
@@ -127,8 +138,10 @@ public:
 private:
   struct Node {
     value_type value{};
+    key_type key{};
     Node* left{nullptr};
     Node* right{nullptr};
+    int height{};
   };
 
   Node* _root{nullptr};
@@ -176,6 +189,17 @@ private:
            _is_bst(node->right, &(node->value), maxEle);
   }
 
+  int _get_balance_factor(Node* node) {
+    int nodeLeftHeight = node->left ? node->left->height : -1;
+    int nodeRightHeight = node->right ? node->right->height : -1;
+    return nodeLeftHeight - nodeRightHeight;
+  }
+
+  bool _is_subtree_balanced(Node* node) {
+    int balanceFactor{_get_balance_factor(node)};
+    return balanceFactor >= -1 && balanceFactor <= 1;
+  }
+
   Node* _min(Node* node) {
     if (!node) {
       return nullptr;
@@ -197,7 +221,7 @@ private:
   }
 
   // O(h)
-  Node* _inorder_successor(Node* node, const_reference ele) {
+  Node* _inorder_successor(Node* node, const key_type& key) {
     Node* current{_search(ele, node)};
     if (!current) {
       return nullptr;
