@@ -60,8 +60,10 @@ public:
     return *this;
   }
 
-  template <typename Key, typename Value> void push(Key&& key, Value&& value) {
-    _root = _push(_root, std::forward(key), std::forward(value));
+  template <concepts::IsSameBase<key_type> Key,
+            concepts::IsSameBase<value_type> Value>
+  void push(Key&& key, Value&& value) {
+    _root = _push(_root, std::forward<Key>(key), std::forward<Value>(value));
   }
 
   void remove(const key_type& key) { _root = _delete(_root, key); };
@@ -147,9 +149,10 @@ private:
   public:
     Node() = default;
 
-    template <typename Key, typename Value>
+    template <concepts::IsSameBase<key_type> Key,
+              concepts::IsSameBase<value_type> Value>
     Node(Key&& key, Value&& value)
-        : _key{std::forward(key)}, _value{std::forward(value)} {}
+        : _key{std::forward<Key>(key)}, _value{std::forward<Value>(value)} {}
 
     ~Node() = default;
 
@@ -328,15 +331,17 @@ private:
     }
   }
 
-  template <typename Key, typename Value>
+  template <concepts::IsSameBase<key_type> Key,
+            concepts::IsSameBase<value_type> Value>
   Node* _push(Node* node, Key&& key, Value&& value) {
     if (!node) {
-      return new Node{std::forward(key), std::forward(value)};
+      return new Node{std::forward<Key>(key), std::forward<Value>(value)};
     } else if (node->_key < key) {
-      node->_right =
-          _push(node->_right, std::forward(key), std::forward(value));
+      node->_right = _push(node->_right, std::forward<Key>(key),
+                           std::forward<Value>(value));
     } else if (node->_key > key) {
-      node->_left = _push(node->_left, std::forward(key), std::forward(value));
+      node->_left = _push(node->_left, std::forward<Key>(key),
+                          std::forward<Value>(value));
     }
     return node;
   }

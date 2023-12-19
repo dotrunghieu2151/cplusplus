@@ -50,4 +50,8 @@ concept Allocator =
       allocator.destruct(ptr);
     };
 
+template <typename T, typename Q>
+concept IsSameBase = std::same_as<std::remove_cv_t<std::remove_reference_t<T>>,
+                                  std::remove_cv_t<std::remove_reference_t<Q>>>;
+
 } // namespace concepts
