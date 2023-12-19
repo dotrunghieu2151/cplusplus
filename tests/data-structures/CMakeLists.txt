@@ -119,3 +119,13 @@ target_link_libraries(b-plus-tree.test
 )
 
 add_test(b-plus-tree-gtest b-plus-tree.test)
+
+add_executable(avl-tree.test avl-tree.test.cpp)
+
+target_link_libraries(avl-tree.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(avl-tree-gtest avl-tree.test)

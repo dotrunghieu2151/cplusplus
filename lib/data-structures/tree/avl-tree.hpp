@@ -26,7 +26,7 @@ template <concepts::Comparable T, typename Data,
           concepts::Allocator Allocator = Allocator<T>>
 class AVLTree {
 private:
-  struct Node;
+  class Node;
 
 public:
   using key_type = T;
@@ -46,53 +46,52 @@ public:
     other.walk_depth_first_preorder(
         [this](const key_type& key, reference ele) { push(key, ele); });
   };
-  AVLTree(self&& other) : _root{other._root} { other._root = nullptr; };
+  AVLTree(self&& other) : _root{other._root} { other._root = nullptr; }
 
   self& operator=(const self& other) {
     self tmp{other};
     std::swap(tmp, *this);
     return *this;
-  };
+  }
 
   self& operator=(self&& other) {
     self tmp{std::move(other)};
     std::swap(tmp, *this);
     return *this;
-  };
+  }
 
-  template <std::same_as<key_type> Key, std::same_as<value_type> Value>
-  void push(Key&& key, Value&& value) {
+  template <typename Key, typename Value> void push(Key&& key, Value&& value) {
     _root = _push(_root, std::forward(key), std::forward(value));
-  };
+  }
 
   void remove(const key_type& key) { _root = _delete(_root, key); };
 
   pointer search(const key_type& key) {
     Node* result = _search(_root, key);
-    return result ? &(result->value) : nullptr;
+    return result ? &(result->_value) : nullptr;
   };
 
   pointer min() {
     Node* result{_min(_root)};
-    return result ? &(result->value) : nullptr;
+    return result ? &(result->_value) : nullptr;
   };
 
   pointer max() {
     Node* result{_max(_root)};
-    return result ? &(result->value) : nullptr;
+    return result ? &(result->_value) : nullptr;
   };
 
   pointer get_next_inorder(const key_type& key) {
     Node* node{_inorder_successor(_root, key)};
-    return node ? &(node->value) : nullptr;
+    return node ? &(node->_value) : nullptr;
   }
 
   pointer get_previous_inorder(const key_type& key) {
     Node* node{_inorder_predecessor(_root, key)};
-    return node ? &(node->value) : nullptr;
+    return node ? &(node->_value) : nullptr;
   }
 
-  int height() { return _height(_root); }
+  int height() { return _root ? _root->height() : 0; }
 
   void walk_breadth_first(std::function<void(const key_type&, reference)> fn) {
     if (!_root) {
@@ -102,29 +101,29 @@ public:
     queue.push_back(_root);
     while (!queue.empty()) {
       Node* current{queue.pop_front()};
-      fn(current->key, current->value);
-      if (current->left) {
-        queue.push_back(current->left);
+      fn(current->_key, current->_value);
+      if (current->_left) {
+        queue.push_back(current->_left);
       }
-      if (current->right) {
-        queue.push_back(current->right);
+      if (current->_right) {
+        queue.push_back(current->_right);
       }
     }
   }
 
   void walk_depth_first_preorder(
       std::function<void(const key_type&, reference)> fn) {
-    _walk_preorder(_root, [&fn](Node* node) { fn(node->key, node->value); });
+    _walk_preorder(_root, [&fn](Node* node) { fn(node->_key, node->_value); });
   }
 
   void
   walk_depth_first_inorder(std::function<void(const key_type&, reference)> fn) {
-    _walk_inorder(_root, [&fn](Node* node) { fn(node->key, node->value); });
+    _walk_inorder(_root, [&fn](Node* node) { fn(node->_key, node->_value); });
   }
 
   void walk_depth_first_postorder(
       std::function<void(const key_type&, reference)> fn) {
-    _walk_postorder(_root, [&fn](Node* node) { fn(node->key, node->value); });
+    _walk_postorder(_root, [&fn](Node* node) { fn(node->_key, node->_value); });
   }
 
   bool is_binary_search_tree() { return _is_bst(_root, nullptr, nullptr); }
@@ -136,76 +135,96 @@ public:
   friend void swap(self& e1, self& e2) { e1.swap(e2); };
 
 private:
-  struct Node {
-    value_type value{};
-    key_type key{};
-    Node* left{nullptr};
-    Node* right{nullptr};
-    int height{};
+  class Node {
+    friend class AVLTree;
+
+    int _height{};
+    Node* _left{nullptr};
+    Node* _right{nullptr};
+    key_type _key{};
+    value_type _value{};
+
+  public:
+    Node() = default;
+
+    template <typename Key, typename Value>
+    Node(Key&& key, Value&& value)
+        : _key{std::forward(key)}, _value{std::forward(value)} {}
+
+    ~Node() = default;
+
+    Node(const Node& other) = default;
+    Node& operator=(const Node& other) = default;
+
+    Node(Node&& other) = default;
+    Node& operator=(Node&& other) = default;
+
+    int _get_balance_factor() {
+      int nodeLeftHeight = this->_left ? this->_left->_height : -1;
+      int nodeRightHeight = this->_right ? this->_right->_height : -1;
+      return nodeLeftHeight - nodeRightHeight;
+    }
+
+    bool _is_subtree_balanced() {
+      int balanceFactor{_get_balance_factor()};
+      return balanceFactor >= -1 && balanceFactor <= 1;
+    }
+
+    int height() { return this->_height; }
   };
 
   Node* _root{nullptr};
 
-  Node* _delete(Node* node, const_reference ele) {
+  Node* _delete(Node* node, const key_type& key) {
     if (!node) {
       return nullptr;
-    } else if (node->value > ele) {
-      node->left = _delete(node->left, ele);
-    } else if (node->value < ele) {
-      node->right = _delete(node->right, ele);
+    } else if (node->_key > key) {
+      node->_left = _delete(node->_left, key);
+    } else if (node->_key < key) {
+      node->_right = _delete(node->_right, key);
     } else {
       // found ele, delete
-      if (!node->left && !node->right) {
+      if (!node->_left && !node->_right) {
         // case 1: no child
         delete node;
         node = nullptr;
-      } else if (!node->left) {
+      } else if (!node->_left) {
         // case 2: 1 child
         Node* tmp{node};
-        node = node->right;
+        node = node->_right;
         delete tmp;
-      } else if (!node->right) {
+      } else if (!node->_right) {
         Node* tmp{node};
-        node = node->left;
+        node = node->_left;
         delete tmp;
       } else {
         // case 3: 2 children
-        Node* maxLeftNode{_max(node->left)};
-        std::swap(node->value, maxLeftNode->value);
-        node->left = _delete(node->left, maxLeftNode->value);
+        Node* maxLeftNode{_max(node->_left)};
+        std::swap(node->_value, maxLeftNode->_value);
+        std::swap(node->_key, maxLeftNode->_key);
+        node->_left = _delete(node->_left, maxLeftNode->_key);
       }
     }
     return node;
   }
 
-  bool _is_bst(Node* node, pointer minEle, pointer maxEle) {
+  bool _is_bst(Node* node, key_type* minEle, key_type* maxEle) {
     if (!node) {
       return true;
     }
-    bool isGreaterThanMin(minEle ? node->value > *minEle : true);
-    bool isLessThanMax(maxEle ? node->value < *maxEle : true);
+    bool isGreaterThanMin(minEle ? node->_key > *minEle : true);
+    bool isLessThanMax(maxEle ? node->_key < *maxEle : true);
     return isGreaterThanMin && isLessThanMax &&
-           _is_bst(node->left, minEle, &(node->value)) &&
-           _is_bst(node->right, &(node->value), maxEle);
-  }
-
-  int _get_balance_factor(Node* node) {
-    int nodeLeftHeight = node->left ? node->left->height : -1;
-    int nodeRightHeight = node->right ? node->right->height : -1;
-    return nodeLeftHeight - nodeRightHeight;
-  }
-
-  bool _is_subtree_balanced(Node* node) {
-    int balanceFactor{_get_balance_factor(node)};
-    return balanceFactor >= -1 && balanceFactor <= 1;
+           _is_bst(node->_left, minEle, &(node->_key)) &&
+           _is_bst(node->_right, &(node->_key), maxEle);
   }
 
   Node* _min(Node* node) {
     if (!node) {
       return nullptr;
     }
-    while (node->left) {
-      node = node->left;
+    while (node->_left) {
+      node = node->_left;
     }
     return node;
   }
@@ -214,32 +233,32 @@ private:
     if (!node) {
       return nullptr;
     }
-    while (node->right) {
-      node = node->right;
+    while (node->_right) {
+      node = node->_right;
     }
     return node;
   }
 
   // O(h)
   Node* _inorder_successor(Node* node, const key_type& key) {
-    Node* current{_search(ele, node)};
+    Node* current{_search(node, key)};
     if (!current) {
       return nullptr;
     }
     // if there is right subtree, find the min
-    if (current->right) {
-      return _min(current->right);
+    if (current->_right) {
+      return _min(current->_right);
     } else {
       // no right subtree, need to walk to nearest ancestor that the current
       // node is on the left
       Node* ancestor{_root};
       Node* successor{nullptr};
       while (ancestor != current) {
-        if (current->value < ancestor->value) {
+        if (current->_key < ancestor->_key) {
           successor = ancestor;
-          ancestor = ancestor->left;
+          ancestor = ancestor->_left;
         } else {
-          ancestor = ancestor->right;
+          ancestor = ancestor->_right;
         }
       }
       return successor;
@@ -247,36 +266,29 @@ private:
   }
 
   // O(h)
-  Node* _inorder_predecessor(Node* node, const_reference ele) {
-    Node* current{_search(ele, node)};
+  Node* _inorder_predecessor(Node* node, const key_type& key) {
+    Node* current{_search(node, key)};
     if (!current) {
       return nullptr;
     }
     // if there is left subtree, find the max
-    if (current->left) {
-      return _max(current->left);
+    if (current->_left) {
+      return _max(current->_left);
     } else {
       // no left subtree, need to walk to nearest ancestor that the current
       // node is on the right
       Node* ancestor{_root};
       Node* successor{nullptr};
       while (ancestor != current) {
-        if (current->value > ancestor->value) {
+        if (current->_key > ancestor->_key) {
           successor = ancestor;
-          ancestor = ancestor->right;
+          ancestor = ancestor->_right;
         } else {
-          ancestor = ancestor->left;
+          ancestor = ancestor->_left;
         }
       }
       return successor;
     }
-  }
-
-  int _height(Node* node) {
-    if (!node) {
-      return -1;
-    }
-    return std::max<int>(_height(node->left), _height(node->right)) + 1;
   }
 
   void _walk_preorder(Node* node, const std::function<void(Node*)>& fn) {
@@ -284,56 +296,47 @@ private:
       return;
     }
     fn(node);
-    _walk_preorder(node->left, fn);
-    _walk_preorder(node->right, fn);
+    _walk_preorder(node->_left, fn);
+    _walk_preorder(node->_right, fn);
   }
 
   void _walk_inorder(Node* node, const std::function<void(Node*)>& fn) {
     if (!node) {
       return;
     }
-    _walk_inorder(node->left, fn);
+    _walk_inorder(node->_left, fn);
     fn(node);
-    _walk_inorder(node->right, fn);
+    _walk_inorder(node->_right, fn);
   }
 
   void _walk_postorder(Node* node, const std::function<void(Node*)>& fn) {
     if (!node) {
       return;
     }
-    _walk_postorder(node->left, fn);
-    _walk_postorder(node->right, fn);
+    _walk_postorder(node->_left, fn);
+    _walk_postorder(node->_right, fn);
     fn(node);
   }
 
-  Node* _search(const_reference ele, Node* node) {
-    if (!node || node->value == ele) {
+  Node* _search(Node* node, const key_type& key) {
+    if (!node || node->_key == key) {
       return node;
-    } else if (node->value > ele) {
-      return _search(ele, node->left);
+    } else if (node->_key > key) {
+      return _search(node->_left, key);
     } else {
-      return _search(ele, node->right);
+      return _search(node->_right, key);
     }
   }
 
-  Node* _push(Node* node, const_reference ele) {
+  template <typename Key, typename Value>
+  Node* _push(Node* node, Key&& key, Value&& value) {
     if (!node) {
-      return new Node{ele};
-    } else if (node->value < ele) {
-      node->right = _push(node->right, ele);
-    } else if (node->value > ele) {
-      node->left = _push(node->left, ele);
-    }
-    return node;
-  }
-
-  Node* _push(Node* node, rvalue_reference ele) {
-    if (!node) {
-      return new Node{std::move(ele)};
-    } else if (node->value < ele) {
-      node->right = _push(node->right, std::move(ele));
-    } else if (node->value > ele) {
-      node->left = _push(node->left, std::move(ele));
+      return new Node{std::forward(key), std::forward(value)};
+    } else if (node->_key < key) {
+      node->_right =
+          _push(node->_right, std::forward(key), std::forward(value));
+    } else if (node->_key > key) {
+      node->_left = _push(node->_left, std::forward(key), std::forward(value));
     }
     return node;
   }
