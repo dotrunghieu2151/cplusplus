@@ -95,6 +95,10 @@ public:
     return !operator<(o1, o2);
   };
 
+  friend std::ostream& operator<<(std::ostream& os, const Test& test) {
+    return os << test.num();
+  }
+
   int num() const { return _num; }
 
   void setNum(int num) { _num = num; }

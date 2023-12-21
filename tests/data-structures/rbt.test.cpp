@@ -10,7 +10,7 @@
 
 class ContainerTest : public ::testing::Test {
 public:
-  trees::AVLTree<int, helpers::Test> _bst{};
+  trees::RBT<int, helpers::Test> _bst{};
 
   // void containersEq(const Deque<TestObj>& c1, const Deque<TestObj>& c2) {
   //   EXPECT_EQ(c1.size(), c2.size());
@@ -40,7 +40,7 @@ protected:
 };
 
 TEST_F(ContainerTest, BSTCopy) {
-  trees::AVLTree<int, helpers::Test> tree{_bst};
+  trees::RBT<int, helpers::Test> tree{_bst};
   EXPECT_EQ(tree.is_binary_search_tree(), true);
   EXPECT_EQ(tree.height(), _bst.height());
   EXPECT_EQ(tree.max()->num(), _bst.max()->num());

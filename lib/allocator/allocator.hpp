@@ -55,3 +55,13 @@ public:
     return std::numeric_limits<size_type>::max() / sizeof(value_type);
   }
 };
+
+template <> class Allocator<void> {
+  using value_type = void;
+  using pointer = void*;
+  using const_pointer = const void*;
+
+  template <class U> struct rebind {
+    using other = Allocator<U>;
+  };
+};

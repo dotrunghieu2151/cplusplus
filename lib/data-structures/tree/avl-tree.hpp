@@ -5,6 +5,7 @@
 #include <concept.hpp>
 #include <functional>
 #include <helpers.hpp>
+#include <iostream>
 #include <queue.hpp>
 #include <utility>
 
@@ -134,7 +135,36 @@ public:
     using std::swap;
     swap(_root, other._root);
   }
-  friend void swap(self& e1, self& e2) { e1.swap(e2); };
+  friend void swap(self& e1, self& e2) { e1.swap(e2); }
+
+  friend std::ostream& operator<<(std::ostream& os, const self& tree) {
+    if (!tree._root) {
+      return os;
+    }
+    Queue<Node*> queue{};
+    int rowNodeCount{1};
+    int nextRowNodeCount{};
+    queue.push_back(tree._root);
+    while (!queue.empty()) {
+      Node* node{queue.pop_front()};
+      os << "[" << node->_key << "]  ";
+      --rowNodeCount;
+      if (node->_left) {
+        queue.push_back(node->_left);
+        nextRowNodeCount += 1;
+      }
+      if (node->_right) {
+        queue.push_back(node->_right);
+        nextRowNodeCount += 1;
+      }
+      if (rowNodeCount == 0) {
+        os << "\n";
+        rowNodeCount = nextRowNodeCount;
+        nextRowNodeCount = 0;
+      }
+    }
+    return os;
+  }
 
 private:
   class Node {
@@ -154,7 +184,10 @@ private:
     Node(Key&& key, Value&& value)
         : _key{std::forward<Key>(key)}, _value{std::forward<Value>(value)} {}
 
-    ~Node() = default;
+    ~Node() {
+      std::cout << "NODE DETOR"
+                << "\n";
+    }
 
     Node(const Node& other) = default;
     Node& operator=(const Node& other) = default;
@@ -162,54 +195,83 @@ private:
     Node(Node&& other) = default;
     Node& operator=(Node&& other) = default;
 
-    int _get_balance_factor() {
+    int get_balance_factor() {
       int nodeLeftHeight = this->_left ? this->_left->_height : -1;
       int nodeRightHeight = this->_right ? this->_right->_height : -1;
       return nodeLeftHeight - nodeRightHeight;
     }
 
-    bool _is_subtree_balanced() {
-      int balanceFactor{_get_balance_factor()};
+    bool is_subtree_balanced() {
+      int balanceFactor{get_balance_factor()};
       return balanceFactor >= -1 && balanceFactor <= 1;
     }
 
-    int height() { return this->_height; }
+    void update_height() {
+      _height = std::max<int>(_left ? _left->height() : -1,
+                              _right ? _right->height() : -1) +
+                1;
+      return;
+    }
+
+    int height() { return _height; }
+
+    bool is_leaf() { return !_right && !_left; }
+
+    void* operator new(std::size_t size) {
+      std::cout << "overloaded new"
+                << "\n";
+      typename Allocator::rebind<Node>::other alloc{};
+      return static_cast<void*>(alloc.allocate(size));
+    }
+
+    void operator delete(void* p, std::size_t) {
+      std::cout << "overloaded delete"
+                << "\n";
+      typename Allocator::rebind<Node>::other alloc{};
+      alloc.deallocate(static_cast<Node*>(p));
+      return;
+    }
+
+  private:
+    // this method assumes that the subtree is at least 3 level deep:
+    // grandparent (this node) => parent => grandchild
+    // move right child to  parent, parent move to left child of right child
+    // return updated subtree
+    Node* left_rotate() {
+      Node* rightChild{_right};
+      Node* leftChildOfRightChild{rightChild->_left};
+
+      rightChild->_left = this;
+      this->_right = leftChildOfRightChild;
+
+      // must update this height first, because it is now a child of rightChild
+      this->update_height();
+      // update rightChild height to reflect correct balance factor
+      rightChild->update_height();
+      // return the new subtree, ancestor of this subtree should update its left
+      // (right) to point to this rightChild
+      return rightChild;
+    }
+
+    // this method assumes that the subtree is at least 3 level deep:
+    // grandparent (this node) => parent => grandchild
+    // move left child to parent, parent move to right child of left child
+    // return updated subtree
+    Node* right_rotate() {
+      Node* leftChild{_left};
+      Node* rightChildOfLeftChild{_left->_right};
+
+      leftChild->_right = this;
+      this->_left = rightChildOfLeftChild;
+
+      this->update_height();
+      leftChild->update_height();
+
+      return leftChild;
+    }
   };
 
   Node* _root{nullptr};
-
-  Node* _delete(Node* node, const key_type& key) {
-    if (!node) {
-      return nullptr;
-    } else if (node->_key > key) {
-      node->_left = _delete(node->_left, key);
-    } else if (node->_key < key) {
-      node->_right = _delete(node->_right, key);
-    } else {
-      // found ele, delete
-      if (!node->_left && !node->_right) {
-        // case 1: no child
-        delete node;
-        node = nullptr;
-      } else if (!node->_left) {
-        // case 2: 1 child
-        Node* tmp{node};
-        node = node->_right;
-        delete tmp;
-      } else if (!node->_right) {
-        Node* tmp{node};
-        node = node->_left;
-        delete tmp;
-      } else {
-        // case 3: 2 children
-        Node* maxLeftNode{_max(node->_left)};
-        std::swap(node->_value, maxLeftNode->_value);
-        std::swap(node->_key, maxLeftNode->_key);
-        node->_left = _delete(node->_left, maxLeftNode->_key);
-      }
-    }
-    return node;
-  }
 
   bool _is_bst(Node* node, key_type* minEle, key_type* maxEle) {
     if (!node) {
@@ -331,6 +393,15 @@ private:
     }
   }
 
+  /* for insertion, insert normally like a BST. Then check the balance factor
+  and rotate accordingly AVL tree only needs 1 rotate (double rotations like LR,
+  RL still counts as 1 rotation)
+  Since AVL must be balanced at all time
+  when inserting, we only need to traverse the insertion path upward at most 2
+  times. 1 time to parent (which height will be + 1). 1 time to grandparent
+  (which height will be + 2)
+  => we balance at this grandparent node
+  */
   template <concepts::IsSameBase<key_type> Key,
             concepts::IsSameBase<value_type> Value>
   Node* _push(Node* node, Key&& key, Value&& value) {
@@ -342,6 +413,103 @@ private:
     } else if (node->_key > key) {
       node->_left = _push(node->_left, std::forward<Key>(key),
                           std::forward<Value>(value));
+    } else {
+      // duplicate key is not allowed, we simply returned the node
+      return node;
+    }
+
+    node->update_height();
+
+    // we try to balance the tree here.
+    int balanceFactor{node->get_balance_factor()};
+
+    if (balanceFactor > 1) {
+      // left subtree is heavier, need to right rotate or LR rotate
+      if (key < node->_left->_key) {
+        // do right rotate
+        return node->right_rotate();
+      } else {
+        // do LR rotate
+        node->_left = node->_left->left_rotate();
+        return node->right_rotate();
+      }
+    } else if (balanceFactor < -1) {
+      // right subtree is heavier, need to left rotate or RL rotate
+      if (key > node->_right->_key) {
+        // do left rotate
+        return node->left_rotate();
+      } else {
+        // do RL rotate
+        node->_right = node->_right->right_rotate();
+        return node->left_rotate();
+      }
+    }
+    // else node is balanced
+    return node;
+  }
+
+  // delete is similar to normal BST delete
+  // however we have to do more than 1 rotation (unlike insertion), because we
+  // could delete any node in the tree
+  // we have to recurivsely check from the deleted node to the root, and balance
+  // if necessary
+  Node* _delete(Node* node, const key_type& key) {
+    if (!node) {
+      return nullptr;
+    } else if (node->_key > key) {
+      node->_left = _delete(node->_left, key);
+    } else if (node->_key < key) {
+      node->_right = _delete(node->_right, key);
+    } else {
+      // found ele, delete
+      if (!node->_left && !node->_right) {
+        // case 1: no child
+        delete node;
+        node = nullptr;
+      } else if (!node->_left) {
+        // case 2: 1 child
+        Node* tmp{node};
+        node = node->_right;
+        delete tmp;
+      } else if (!node->_right) {
+        Node* tmp{node};
+        node = node->_left;
+        delete tmp;
+      } else {
+        // case 3: 2 children
+        Node* maxLeftNode{_max(node->_left)};
+        std::swap(node->_value, maxLeftNode->_value);
+        std::swap(node->_key, maxLeftNode->_key);
+        node->_left = _delete(node->_left, maxLeftNode->_key);
+      }
+    }
+
+    // if we delete leaf node, return
+    if (!node) {
+      return nullptr;
+    }
+
+    // else we try to balance from this node to root
+    node->update_height();
+    int balanceFactor{node->get_balance_factor()};
+    if (balanceFactor < -1) {
+      // right tree is heavier, do left rotation or RL rotation
+      if (node->_right->get_balance_factor() <= 0) {
+        // node right subtree is heavier, rotate left
+        return node->left_rotate();
+      } else {
+        node->_right = node->_right->right_rotate();
+        return node->left_rotate();
+      }
+    } else if (balanceFactor > 1) {
+      // left tree is heavier, do right rotation or LR rotation
+      if (node->_left->get_balance_factor() >= 0) {
+        // node left subtree is heavier, rotate right
+        return node->right_rotate();
+      } else {
+        node->_left = node->_left->left_rotate();
+        return node->right_rotate();
+      }
     }
     return node;
   }

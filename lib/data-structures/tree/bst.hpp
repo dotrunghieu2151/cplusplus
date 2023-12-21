@@ -3,6 +3,7 @@
 #include <concept.hpp>
 #include <functional>
 #include <helpers.hpp>
+#include <iostream>
 #include <queue.hpp>
 #include <utility>
 
@@ -123,6 +124,35 @@ public:
     swap(_root, other._root);
   }
   friend void swap(self& e1, self& e2) { e1.swap(e2); };
+
+  friend std::ostream& operator<<(std::ostream& os, const self& tree) {
+    if (!tree._root) {
+      return os;
+    }
+    Queue<Node*> queue{};
+    int rowNodeCount{1};
+    int nextRowNodeCount{};
+    queue.push_back(tree._root);
+    while (!queue.empty()) {
+      Node* node{queue.pop_front()};
+      os << "[" << node->value << "]  ";
+      --rowNodeCount;
+      if (node->left) {
+        queue.push_back(node->left);
+        nextRowNodeCount += 1;
+      }
+      if (node->right) {
+        queue.push_back(node->right);
+        nextRowNodeCount += 1;
+      }
+      if (rowNodeCount == 0) {
+        os << "\n";
+        rowNodeCount = nextRowNodeCount;
+        nextRowNodeCount = 0;
+      }
+    }
+    return os;
+  }
 
 private:
   struct Node {

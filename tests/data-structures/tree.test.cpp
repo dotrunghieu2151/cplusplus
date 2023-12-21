@@ -30,6 +30,8 @@ protected:
     _bst.push(helpers::Test{0});
     _bst.push(helpers::Test{64});
     _bst.push(helpers::Test{-12});
+
+    std::cout << _bst;
   };
 };
 

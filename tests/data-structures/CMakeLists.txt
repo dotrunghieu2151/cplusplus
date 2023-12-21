@@ -129,3 +129,14 @@ target_link_libraries(avl-tree.test
 )
 
 add_test(avl-tree-gtest avl-tree.test)
+
+
+add_executable(rbt.test rbt.test.cpp)
+
+target_link_libraries(rbt.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(rbt-gtest rbt.test)
