@@ -114,10 +114,131 @@ TEST_F(ContainerTest, BST_is_binary_search_tree) {
 }
 
 TEST_F(ContainerTest, BST_remove) {
-  helpers::Test target{64};
-  _bst.remove(64);
-  EXPECT_EQ(_bst.max()->num(), 25);
-  EXPECT_EQ(_bst.is_binary_search_tree(), true);
+  trees::AVLTree<int, helpers::Test> avlTree{};
+  avlTree.push(1, helpers::Test{1});
+  avlTree.push(24, helpers::Test{24});
+  avlTree.push(25, helpers::Test{25});
+  avlTree.push(12, helpers::Test{12});
+  avlTree.push(0, helpers::Test{0});
+  avlTree.push(64, helpers::Test{64});
+  avlTree.push(30, helpers::Test{30});
+  avlTree.push(45, helpers::Test{45});
+  avlTree.push(50, helpers::Test{50});
+  Vector<int> treeAsArr{0, 1, 12, 24, 25, 30, 45, 50};
+  std::size_t i{};
+  avlTree.remove(64);
+  EXPECT_EQ(avlTree.max()->num(), 50);
+  EXPECT_EQ(avlTree.search(64), nullptr);
+
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+
+  std::cout << avlTree << "\n";
+
+  treeAsArr = {0, 1, 12, 24, 25, 45, 50};
+  i = 0;
+
+  avlTree.remove(30);
+  EXPECT_EQ(avlTree.max()->num(), 50);
+  EXPECT_EQ(avlTree.search(30), nullptr);
+
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+
+  std::cout << avlTree << "\n";
+
+  treeAsArr = {0, 1, 12, 25, 45, 50};
+  i = 0;
+
+  avlTree.remove(24);
+  EXPECT_EQ(avlTree.max()->num(), 50);
+  EXPECT_EQ(avlTree.search(24), nullptr);
+
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+
+  std::cout << avlTree << "\n";
+
+  avlTree.push(60, helpers::Test{60});
+  avlTree.push(70, helpers::Test{70});
+  avlTree.push(30, helpers::Test{30});
+  avlTree.push(80, helpers::Test{80});
+
+  treeAsArr = {0, 1, 12, 30, 45, 50, 60, 70, 80};
+  i = 0;
+
+  avlTree.remove(25);
+
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+
+  std::cout << avlTree << "\n";
+
+  avlTree.remove(80);
+  avlTree.remove(70);
+  avlTree.remove(60);
+  avlTree.remove(50);
+
+  treeAsArr = {0, 1, 12, 30, 45};
+  i = 0;
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+
+  std::cout << avlTree << "\n";
+  avlTree.remove(12);
+
+  treeAsArr = {0, 1, 30, 45};
+  i = 0;
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+  avlTree.remove(45);
+
+  treeAsArr = {0, 1, 30};
+  i = 0;
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+  avlTree.remove(1);
+
+  treeAsArr = {0, 30};
+  i = 0;
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+  avlTree.remove(0);
+
+  treeAsArr = {30};
+  i = 0;
+  avlTree.walk_depth_first_inorder(
+      [&treeAsArr, &i](const int&, helpers::Test& data) -> void {
+        EXPECT_EQ(treeAsArr[i], data.num());
+        ++i;
+      });
+  avlTree.remove(30);
+
+  std::cout << avlTree << "\n";
 }
 
 TEST_F(ContainerTest, BST_inorder_successor_predecessor) {

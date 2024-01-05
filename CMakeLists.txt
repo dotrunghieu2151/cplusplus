@@ -53,7 +53,7 @@ add_compile_options(-pedantic-errors)
 add_compile_options(-Werror)
 # add_compile_options(-stdlib=libc++)
 
-# add_compile_options(-Ofast)
+add_compile_options(-Ofast)
 
 add_library(myLib "")
 add_subdirectory(lib)

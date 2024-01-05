@@ -61,6 +61,7 @@ template <> class Allocator<void> {
   using pointer = void*;
   using const_pointer = const void*;
 
+public:
   template <class U> struct rebind {
     using other = Allocator<U>;
   };

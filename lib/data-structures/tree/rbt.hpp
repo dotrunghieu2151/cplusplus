@@ -29,6 +29,8 @@ class RBT {
 private:
   class Node;
 
+  enum Color { red, black };
+
 public:
   using key_type = T;
   using value_type = Data;
@@ -65,9 +67,16 @@ public:
             concepts::IsSameBase<value_type> Value>
   void push(Key&& key, Value&& value) {
     _root = _push(_root, std::forward<Key>(key), std::forward<Value>(value));
+    _root->_color = Color::black;
   }
 
-  void remove(const key_type& key) { _root = _delete(_root, key); };
+  void remove(const key_type& key) {
+    bool hasBalanced = false;
+    _root = _delete(_root, key, hasBalanced);
+    if (_root) {
+      _root->_color = Color::black;
+    }
+  };
 
   pointer search(const key_type& key) {
     Node* result = _search(_root, key);
@@ -94,7 +103,7 @@ public:
     return node ? &(node->_value) : nullptr;
   }
 
-  int height() { return _root ? _root->height() : 0; }
+  int height() { return _height(_root); }
 
   void walk_breadth_first(std::function<void(const key_type&, reference)> fn) {
     if (!_root) {
@@ -147,7 +156,7 @@ public:
     queue.push_back(tree._root);
     while (!queue.empty()) {
       Node* node{queue.pop_front()};
-      os << "[" << node->_key << "]  ";
+      os << "[" << node->_key << "]" << (tree._is_red(node) ? "[R] " : "[B] ");
       --rowNodeCount;
       if (node->_left) {
         queue.push_back(node->_left);
@@ -170,7 +179,7 @@ private:
   class Node {
     friend class RBT;
 
-    int _height{};
+    Color _color{Color::red};
     Node* _left{nullptr};
     Node* _right{nullptr};
     key_type _key{};
@@ -184,10 +193,7 @@ private:
     Node(Key&& key, Value&& value)
         : _key{std::forward<Key>(key)}, _value{std::forward<Value>(value)} {}
 
-    ~Node() {
-      std::cout << "NODE DETOR"
-                << "\n";
-    }
+    ~Node() {}
 
     Node(const Node& other) = default;
     Node& operator=(const Node& other) = default;
@@ -195,38 +201,27 @@ private:
     Node(Node&& other) = default;
     Node& operator=(Node&& other) = default;
 
-    int get_balance_factor() {
-      int nodeLeftHeight = this->_left ? this->_left->_height : -1;
-      int nodeRightHeight = this->_right ? this->_right->_height : -1;
-      return nodeLeftHeight - nodeRightHeight;
-    }
+    bool is_leaf() { return !_right && !_left; }
 
-    bool is_subtree_balanced() {
-      int balanceFactor{get_balance_factor()};
-      return balanceFactor >= -1 && balanceFactor <= 1;
-    }
+    bool is_red() { return _color == Color::red; }
 
-    void update_height() {
-      _height = std::max<int>(_left ? _left->height() : -1,
-                              _right ? _right->height() : -1) +
-                1;
+    void flip_color() {
+      _color = static_cast<Color>(_color ^ 1);
+      if (_right) {
+        _right->_color = static_cast<Color>(_right->_color ^ 1);
+      }
+      if (_left) {
+        _left->_color = static_cast<Color>(_left->_color ^ 1);
+      }
       return;
     }
 
-    int height() { return _height; }
-
-    bool is_leaf() { return !_right && !_left; }
-
     void* operator new(std::size_t size) {
-      std::cout << "overloaded new"
-                << "\n";
       typename Allocator::rebind<Node>::other alloc{};
       return static_cast<void*>(alloc.allocate(size));
     }
 
     void operator delete(void* p, std::size_t) {
-      std::cout << "overloaded delete"
-                << "\n";
       typename Allocator::rebind<Node>::other alloc{};
       alloc.deallocate(static_cast<Node*>(p));
       return;
@@ -244,12 +239,9 @@ private:
       rightChild->_left = this;
       this->_right = leftChildOfRightChild;
 
-      // must update this height first, because it is now a child of rightChild
-      this->update_height();
-      // update rightChild height to reflect correct balance factor
-      rightChild->update_height();
-      // return the new subtree, ancestor of this subtree should update its left
-      // (right) to point to this rightChild
+      rightChild->_color = this->_color;
+      this->_color = Color::red;
+
       return rightChild;
     }
 
@@ -264,8 +256,8 @@ private:
       leftChild->_right = this;
       this->_left = rightChildOfLeftChild;
 
-      this->update_height();
-      leftChild->update_height();
+      leftChild->_color = this->_color;
+      this->_color = Color::red;
 
       return leftChild;
     }
@@ -393,15 +385,13 @@ private:
     }
   }
 
-  /* for insertion, insert normally like a BST. Then check the balance factor
-  and rotate accordingly AVL tree only needs 1 rotate (double rotations like LR,
-  RL still counts as 1 rotation)
-  Since AVL must be balanced at all time
-  when inserting, we only need to traverse the insertion path upward at most 2
-  times. 1 time to parent (which height will be + 1). 1 time to grandparent
-  (which height will be + 2)
-  => we balance at this grandparent node
-  */
+  int _height(Node* node) {
+    if (!node) {
+      return -1;
+    }
+    return std::max<int>(_height(node->_left), _height(node->_right)) + 1;
+  }
+
   template <concepts::IsSameBase<key_type> Key,
             concepts::IsSameBase<value_type> Value>
   Node* _push(Node* node, Key&& key, Value&& value) {
@@ -410,108 +400,226 @@ private:
     } else if (node->_key < key) {
       node->_right = _push(node->_right, std::forward<Key>(key),
                            std::forward<Value>(value));
+      return _fix_up_right(node);
     } else if (node->_key > key) {
       node->_left = _push(node->_left, std::forward<Key>(key),
                           std::forward<Value>(value));
+      return _fix_up_left(node);
     } else {
       // duplicate key is not allowed, we simply returned the node
       return node;
     }
+  }
 
-    node->update_height();
-
-    // we try to balance the tree here.
-    int balanceFactor{node->get_balance_factor()};
-
-    if (balanceFactor > 1) {
-      // left subtree is heavier, need to right rotate or LR rotate
-      if (key < node->_left->_key) {
-        // do right rotate
-        return node->right_rotate();
-      } else {
-        // do LR rotate
+  Node* _fix_up_left(Node* node) {
+    if (_is_red(node->_left)) {
+      // case 1: both children are red
+      if (_is_red(node->_right)) {
+        // check if there 2 reds children in a row (LL, LR)
+        if (_is_red(node->_left->_left) || _is_red(node->_left->_right)) {
+          node->flip_color();
+        }
+      } else if (_is_red(node->_left->_left)) {
+        // 2 red left in a row => right rotate
+        node = node->right_rotate();
+      } else if (_is_red(node->_left->_right)) {
+        // 2 red, double rotate
         node->_left = node->_left->left_rotate();
-        return node->right_rotate();
-      }
-    } else if (balanceFactor < -1) {
-      // right subtree is heavier, need to left rotate or RL rotate
-      if (key > node->_right->_key) {
-        // do left rotate
-        return node->left_rotate();
-      } else {
-        // do RL rotate
-        node->_right = node->_right->right_rotate();
-        return node->left_rotate();
+        node = node->right_rotate();
       }
     }
-    // else node is balanced
+    return node;
+  }
+
+  Node* _fix_up_right(Node* node) {
+    if (_is_red(node->_right)) {
+      // case 1: both children are red
+      if (_is_red(node->_left)) {
+        // check if there 2 reds children in a row (RR, RL)
+        if (_is_red(node->_right->_right) || _is_red(node->_right->_left)) {
+          node->flip_color();
+        }
+      } else if (_is_red(node->_right->_right)) {
+        // 2 red left in a row => right rotate
+        node = node->left_rotate();
+      } else if (_is_red(node->_right->_left)) {
+        // 2 red, double rotate
+        node->_right = node->_right->right_rotate();
+        node = node->left_rotate();
+      }
+    }
     return node;
   }
 
   // delete is similar to normal BST delete
   // however we have to do more than 1 rotation (unlike insertion), because we
   // could delete any node in the tree
-  // we have to recurivsely check from the deleted node to the root, and balance
-  // if necessary
-  Node* _delete(Node* node, const key_type& key) {
+  // if we delete red node, we're fine. If it is a black node, the tree's black
+  // depth has changes
+  // we need to fix up in this case
+  // Also, deletion in RBT requires fewer rotations than AVL tree
+  Node* _delete(Node* node, const key_type& key, bool& hasBalanced) {
     if (!node) {
+      hasBalanced = true;
       return nullptr;
     } else if (node->_key > key) {
-      node->_left = _delete(node->_left, key);
+      node->_left = _delete(node->_left, key, hasBalanced);
+      return hasBalanced ? node : _fix_up_left_after_delete(node, hasBalanced);
     } else if (node->_key < key) {
-      node->_right = _delete(node->_right, key);
+      node->_right = _delete(node->_right, key, hasBalanced);
+      return hasBalanced ? node : _fix_up_right_after_delete(node, hasBalanced);
     } else {
       // found ele, delete
       if (!node->_left && !node->_right) {
         // case 1: no child
+        if (_is_red(node)) {
+          hasBalanced = true;
+        }
         delete node;
-        node = nullptr;
-      } else if (!node->_left) {
-        // case 2: 1 child
-        Node* tmp{node};
-        node = node->_right;
-        delete tmp;
+        return nullptr;
       } else if (!node->_right) {
-        Node* tmp{node};
-        node = node->_left;
-        delete tmp;
+        // case 2: 1 child
+        Node* tmp{node->_left};
+        if (_is_red(node)) {
+          // if node is red, black depth is not changed, simply delete and
+          // replace with child
+          hasBalanced = true;
+          delete node;
+          return tmp;
+        } else if (_is_red(tmp)) {
+          // if child is red, delete node, and flip child color => black depth
+          // not changed
+          hasBalanced = true;
+          delete node;
+          tmp->_color = Color::black;
+          return tmp;
+        } else {
+          // child is also black, black depth has changed, we replace node with
+          // black child and let the grandparent balance
+          delete node;
+          return tmp;
+        }
+      } else if (!node->_left) {
+        Node* tmp{node->_right};
+        if (_is_red(node)) {
+          // if node is red, black depth is not changed, simply delete and
+          // replace with child
+          hasBalanced = true;
+          delete node;
+          return tmp;
+        } else if (_is_red(tmp)) {
+          // if child is red, delete node, and flip child color => black depth
+          // not changed
+          hasBalanced = true;
+          delete node;
+          tmp->_color = Color::black;
+          return tmp;
+        } else {
+          // child is also black, black depth has changed, we replace node with
+          // black child and let the grandparent balance
+          delete node;
+          return tmp;
+        }
       } else {
         // case 3: 2 children
         Node* maxLeftNode{_max(node->_left)};
         std::swap(node->_value, maxLeftNode->_value);
         std::swap(node->_key, maxLeftNode->_key);
-        node->_left = _delete(node->_left, maxLeftNode->_key);
+        node->_left = _delete(node->_left, maxLeftNode->_key, hasBalanced);
+        return hasBalanced ? node
+                           : _fix_up_left_after_delete(node, hasBalanced);
       }
     }
+  }
 
-    // if we delete leaf node, return
-    if (!node) {
-      return nullptr;
+  Node* _fix_up_left_after_delete(Node* node, bool& hasBalanced) {
+    Node* sibling{node->_right};
+    if (!sibling) {
+      return node;
+    }
+    Node* parent{node};
+    // red sibling case, we rotate right by the sibling, reducing it to another
+    // case: red reduction
+    if (_is_red(sibling)) {
+      node = node->left_rotate();
+      sibling = parent->_right;
+    }
+    // case: sibling has both black children
+    if (!_is_red(sibling->_left) && !_is_red(sibling->_right)) {
+      if (_is_red(parent)) {
+        hasBalanced = true;
+      }
+      parent->_color = Color::black;
+      sibling->_color = Color::red;
+    } else {
+      // case: sibling has 1 red children
+      Color initialParentColor{parent->_color};
+      bool isRedReductionCase{node != parent};
+
+      if (_is_red(sibling->_right)) {
+        parent = parent->left_rotate();
+      } else {
+        parent->_right = parent->_right->right_rotate();
+        parent = parent->left_rotate();
+      }
+
+      parent->_color = initialParentColor;
+      parent->_left->_color = Color::black;
+      parent->_right->_color = Color::black;
+
+      if (isRedReductionCase) {
+        node->_left = parent;
+      } else {
+        node = parent;
+      }
+      hasBalanced = true;
     }
 
-    // else we try to balance from this node to root
-    node->update_height();
-    int balanceFactor{node->get_balance_factor()};
-    if (balanceFactor < -1) {
-      // right tree is heavier, do left rotation or RL rotation
-      if (node->_right->get_balance_factor() <= 0) {
-        // node right subtree is heavier, rotate left
-        return node->left_rotate();
-      } else {
-        node->_right = node->_right->right_rotate();
-        return node->left_rotate();
+    return node;
+  }
+
+  Node* _fix_up_right_after_delete(Node* node, bool& hasBalanced) {
+    Node* sibling{node->_left};
+    if (!sibling) {
+      return node;
+    }
+    Node* parent{node};
+    // red reduction case
+    if (_is_red(sibling)) {
+      node = node->right_rotate();
+      sibling = parent->_left;
+    }
+    if (!_is_red(sibling->_left) && !_is_red(sibling->_right)) {
+      if (_is_red(parent)) {
+        hasBalanced = true;
       }
-    } else if (balanceFactor > 1) {
-      // left tree is heavier, do right rotation or LR rotation
-      if (node->_left->get_balance_factor() >= 0) {
-        // node left subtree is heavier, rotate right
-        return node->right_rotate();
+      parent->_color = Color::black;
+      sibling->_color = Color::red;
+    } else {
+      Color initialParentColor{parent->_color};
+      bool isRedReductionCase{node != parent};
+
+      if (_is_red(sibling->_left)) {
+        parent = parent->right_rotate();
       } else {
-        node->_left = node->_left->left_rotate();
-        return node->right_rotate();
+        parent->_left = parent->_left->left_rotate();
+        parent = parent->right_rotate();
       }
+
+      parent->_color = initialParentColor;
+      parent->_left->_color = Color::black;
+      parent->_right->_color = Color::black;
+
+      if (isRedReductionCase) {
+        node->_right = parent;
+      } else {
+        node = parent;
+      }
+      hasBalanced = true;
     }
     return node;
   }
+
+  bool _is_red(Node* node) const { return node ? node->is_red() : false; }
 };
 } // namespace trees

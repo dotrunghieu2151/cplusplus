@@ -140,3 +140,33 @@ target_link_libraries(rbt.test
 )
 
 add_test(rbt-gtest rbt.test)
+
+# add_executable(avl-rbt-perf.test avl-rbt-perf.test.cpp)
+
+# target_link_libraries(avl-rbt-perf.test
+#   PRIVATE 
+#     GTest::gtest_main
+#     myLib
+# )
+
+# add_test(avl-rbt-perf-gtest avl-rbt-perf.test)
+
+add_executable(splay-tree.test splay-tree.test.cpp)
+
+target_link_libraries(splay-tree.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(trie-gtest trie.test)
+
+add_executable(trie.test trie.test.cpp)
+
+target_link_libraries(trie.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(trie-gtest trie.test)

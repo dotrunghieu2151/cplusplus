@@ -184,10 +184,7 @@ private:
     Node(Key&& key, Value&& value)
         : _key{std::forward<Key>(key)}, _value{std::forward<Value>(value)} {}
 
-    ~Node() {
-      std::cout << "NODE DETOR"
-                << "\n";
-    }
+    ~Node() {}
 
     Node(const Node& other) = default;
     Node& operator=(const Node& other) = default;
@@ -218,15 +215,11 @@ private:
     bool is_leaf() { return !_right && !_left; }
 
     void* operator new(std::size_t size) {
-      std::cout << "overloaded new"
-                << "\n";
       typename Allocator::rebind<Node>::other alloc{};
       return static_cast<void*>(alloc.allocate(size));
     }
 
     void operator delete(void* p, std::size_t) {
-      std::cout << "overloaded delete"
-                << "\n";
       typename Allocator::rebind<Node>::other alloc{};
       alloc.deallocate(static_cast<Node*>(p));
       return;

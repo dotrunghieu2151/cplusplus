@@ -5,3 +5,5 @@
 #include <b-tree.hpp>
 #include <bst.hpp>
 #include <rbt.hpp>
+#include <splay-tree.hpp>
+#include <trie.hpp>
