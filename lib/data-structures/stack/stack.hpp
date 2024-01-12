@@ -63,3 +63,6 @@ public:
 
   value_type pop() { return _container.pop_back(); }
 };
+
+// template <typename T, template <typename U> typename Container>
+// Stack() -> Stack<T, Container<T>>;
