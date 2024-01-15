@@ -15,7 +15,7 @@
 using std::cout;
 using std::endl;
 
-#define VECTOR_DEBUG 0
+#define VECTOR_DEBUG 1
 
 #if VECTOR_DEBUG == 1
 #define VECTOR_DEBUG_MS(mes)                                                   \
@@ -36,10 +36,10 @@ Vector<T>::Vector(std::size_t capacity)
 }
 
 template <typename T>
-Vector<T>::Vector(std::initializer_list<T> list) : Vector(list.size()) {
+Vector<T>::Vector(std::initializer_list<T> list) : Vector(list.size() + 2) {
   VECTOR_DEBUG_MS("Vector Ctor List");
 
-  for (std::size_t index{0}; index < list.size(); ++index) {
+  for (std::size_t index{}; index < list.size(); ++index) {
     new (_elements + index) T{*(list.begin() + index)};
   }
   _size = list.size();
@@ -68,7 +68,7 @@ Vector<T>::Vector(const Vector<T>& copy)
       _elements{static_cast<T*>(::operator new(sizeof(T) * copy._space))} {
   VECTOR_DEBUG_MS("Vector Copy Ctor");
 
-  for (std::size_t index = 0; index < _size; ++index) {
+  for (std::size_t index{}; index < _size; ++index) {
     new (_elements + index) T{copy._elements[index]};
   }
 }
@@ -258,7 +258,6 @@ template <typename T> void Vector<T>::reallocate(std::size_t capacity) {
 
   for (std::size_t i = 0; i < _size; ++i) {
     new (newArr + i) T{std::move(_elements[i])};
-    _elements[i].~T();
   }
 
   _space = capacity;
