@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 
-#define HELPER_DEBUG 0
+#define HELPER_DEBUG 1
 
 #if HELPER_DEBUG == 1
 #define HELPER_DEBUG_MS(mes)                                                   \

@@ -15,7 +15,7 @@
 using std::cout;
 using std::endl;
 
-#define VECTOR_DEBUG 1
+#define VECTOR_DEBUG 0
 
 #if VECTOR_DEBUG == 1
 #define VECTOR_DEBUG_MS(mes)                                                   \
@@ -86,7 +86,7 @@ template <typename T> Vector<T>& Vector<T>::operator=(const Vector<T>& copy) {
 template <typename T>
 Vector<T>::Vector(Vector<T>&& move) noexcept
     : _size{move._size}, _space{move._space}, _elements{move._elements} {
-  VECTOR_DEBUG_MS("Move Ctor capacity");
+  VECTOR_DEBUG_MS("Vector Move Ctor");
 
   move._size = 0;
   move._space = 0;
@@ -95,7 +95,7 @@ Vector<T>::Vector(Vector<T>&& move) noexcept
 
 template <typename T>
 Vector<T>& Vector<T>::operator=(Vector<T>&& move) noexcept {
-  VECTOR_DEBUG_MS("Move assignment capacity");
+  VECTOR_DEBUG_MS("Vector Move assignment capacity");
 
   Vector<T> tempMove{std::move(move)};
   tempMove.swap(*this);
@@ -308,9 +308,11 @@ void Vector<T>::insert(std::size_t insertIndex, const T& ele) {
   validateIndex(insertIndex);
   reallocateIfRequired();
   ++_size;
-  for (std::size_t i{_size - 1}; i > insertIndex; --i) {
-    new (_elements + i) T{std::move(_elements[i - 1])};
-    _elements[i - 1].~T();
+  if (_size > 0) {
+    for (std::size_t i{_size - 1}; i > insertIndex; --i) {
+      new (_elements + i) T{std::move(_elements[i - 1])};
+      _elements[i - 1].~T();
+    }
   }
   new (_elements + insertIndex) T{ele};
 }
@@ -318,10 +320,13 @@ template <typename T> void Vector<T>::insert(std::size_t insertIndex, T&& ele) {
   validateIndex(insertIndex);
   reallocateIfRequired();
   ++_size;
-  for (std::size_t i{_size - 1}; i > insertIndex; --i) {
-    new (_elements + i) T{std::move(_elements[i - 1])};
-    _elements[i - 1].~T();
+  if (_size > 0) {
+    for (std::size_t i{_size - 1}; i > insertIndex; --i) {
+      new (_elements + i) T{std::move(_elements[i - 1])};
+      _elements[i - 1].~T();
+    }
   }
+
   new (_elements + insertIndex) T{std::move(ele)};
 }
 
@@ -335,11 +340,13 @@ void Vector<T>::insert(std::size_t insertIndex, Args&&... args) {
   if (_size > _space) {
     reallocate(_size * growRate);
   }
-
-  for (std::size_t i{oldSize - 1}; i >= insertIndex; --i) {
-    new (_elements + i + eleNum) T{std::move(_elements[i])};
-    _elements[i].~T();
+  if (oldSize != 0) {
+    for (std::size_t i{oldSize - 1}; i >= insertIndex; --i) {
+      new (_elements + i + eleNum) T{std::move(_elements[i])};
+      _elements[i].~T();
+    }
   }
+
   ((new (_elements + (insertIndex++)) T{std::forward<T>(args)}), ...);
 }
 
@@ -353,10 +360,11 @@ void Vector<T>::insert(std::size_t insertIndex, Input first, Input last) {
   if (_size > _space) {
     reallocate(_size * growRate);
   }
-
-  for (std::size_t i{oldSize - 1}; i >= insertIndex; --i) {
-    new (_elements + i + eleNum) T{std::move(_elements[i])};
-    _elements[i].~T();
+  if (oldSize != 0) {
+    for (std::size_t i{oldSize - 1}; i >= insertIndex; --i) {
+      new (_elements + i + eleNum) T{std::move(_elements[i])};
+      _elements[i].~T();
+    }
   }
   for (auto index = first; index != last; ++index) {
     new (_elements + (insertIndex++)) T{*index};

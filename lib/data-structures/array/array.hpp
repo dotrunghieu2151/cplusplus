@@ -23,7 +23,7 @@ private:
   T _elements[N]{};
 
   void validateIndex(int index) const {
-    if (index < 0 || index > N) {
+    if (index < 0 || index > N - 1) {
       throw OutOfRangeException{"Index out of range"};
     }
   };

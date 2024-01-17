@@ -326,7 +326,7 @@ private:
   pointer _tail{};
 
   void validateIndex(std::size_t index) const {
-    if (index >= size()) {
+    if (size() > 0 && index >= size()) {
       throw OutOfRangeException{"Index out of range"};
     }
   };

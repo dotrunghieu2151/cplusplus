@@ -3,6 +3,7 @@
 #include <math.hpp>
 #include <string>
 #include <string_view>
+#include <timer.hpp>
 #include <vector.hpp>
 
 TEST(ConvertInfixToPostFix, test) {
@@ -33,4 +34,23 @@ TEST(PrimeNumber, SimpleFindAllPrimeLessThanN) {
     EXPECT_EQ(correctResults[index], results[index]);
     EXPECT_EQ(math::is_prime(results[index]), true);
   }
+}
+
+TEST(PrimeNumber, FindAllPrimePerfTest) {
+  Timer timer{};
+
+  Vector<int> results2{math::find_prime_segmented(40000000)};
+  double segmentedPrimeTime{timer.elapsed()};
+
+  std::cout << "Segmented Sieve time: " << segmentedPrimeTime << "\n";
+
+  timer.reset();
+
+  Vector<int> results1{math::find_prime(40000000)};
+  double simplePrimeTime{timer.elapsed()};
+
+  std::cout << "Simple Sieve time: " << simplePrimeTime << "\n";
+
+  EXPECT_EQ(results2.size(), results1.size());
+  // EXPECT_EQ(simplePrimeTime, segmentedPrimeTime);
 }

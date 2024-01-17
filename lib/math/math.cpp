@@ -82,14 +82,17 @@ Vector<int> find_prime(int n) {
 Vector<int> find_prime_segmented(int n) {
   // Compute all primes smaller than or equal
   // to square root of n find_prime
-  int limit{static_cast<int>(floor(sqrt(n)) + 1)};
+  constexpr int cacheLine{64 * 1024 / sizeof(int)};
+  int limit{std::min<int>(std::floor(std::sqrt(n)), cacheLine)};
   Vector<int> primes{find_prime(limit)};
 
   // Divide the range [0..n-1] in different segments
   // We have chosen segment size as sqrt(n).
   int low{limit};
   int high{2 * limit};
-  Vector<int> result{primes};
+  Vector<int> result(n * 0.5 + 1);
+  result.insert(0, primes.begin(), primes.end());
+  std::vector<bool> mark(static_cast<std::size_t>(limit * 0.5));
 
   // While all segments of range [0..n-1] are not processed,
   // process one segment at a time
@@ -97,9 +100,7 @@ Vector<int> find_prime_segmented(int n) {
     if (high >= n) {
       high = n;
     }
-
-    Vector<bool> mark(static_cast<std::size_t>(limit + 1));
-
+    mark.assign(mark.size(), false);
     // Use the found primes by simpleSieve() to find
     // primes in current range
     for (std::size_t i{}; i < primes.size(); i++) {
@@ -107,8 +108,15 @@ Vector<int> find_prime_segmented(int n) {
       // a multiple of prime[i] (divisible by prime[i])
       // For example, if low is 31 and prime[i] is 3,
       // we start with 33.
-      int start{low * (1 / primes[i]) * primes[i]};
+      // we skip all even numbers
+      if (primes[i] == 2) {
+        continue;
+      }
+      int start{low / primes[i] * primes[i]};
       if (start < low) {
+        start += primes[i];
+      }
+      if (start % 2 == 0) {
         start += primes[i];
       }
       /* Mark multiples of prime[i] in [low..high]:
@@ -118,14 +126,16 @@ Vector<int> find_prime_segmented(int n) {
           to marking 0, marking 51 corresponds to 1 and
           so on. In this way we need to allocate space only
           for range */
-      for (int j{start}; j < high; j += primes[i]) {
-        mark[static_cast<std::size_t>(j - low)] = 1;
+      for (int j{start}; j <= high; j += 2 * primes[i]) {
+        mark[static_cast<std::size_t>((j - low) * 0.5)] = true;
       }
     }
 
     // Numbers which are not marked as false are prime
-    for (int i{low}; i < high; i++) {
-      if (mark[static_cast<std::size_t>(i - low)] == 0) {
+    int lowStart{low % 2 == 0 ? low + 1 : low};
+    int highEnd{high % 2 == 0 ? high - 1 : high};
+    for (int i{lowStart}; i <= highEnd; i += 2) {
+      if (!mark[static_cast<std::size_t>((i - low) * 0.5)]) {
         result.push_back(i);
       }
     }

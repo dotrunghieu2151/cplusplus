@@ -309,7 +309,7 @@ private:
   };
 
   void validateIndex(std::size_t index) {
-    if (index >= size()) {
+    if (_size > 0 && index >= _size) {
       throw OutOfRangeException{"Index out of range"};
     }
   }

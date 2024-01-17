@@ -170,3 +170,13 @@ target_link_libraries(trie.test
 )
 
 add_test(trie-gtest trie.test)
+
+add_executable(fibonacci-heap.test fibonacci-heap.test.cpp)
+
+target_link_libraries(fibonacci-heap.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(fibonacci-heap-gtest fibonacci-heap.test)
