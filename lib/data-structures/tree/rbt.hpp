@@ -103,6 +103,11 @@ public:
     return node ? &(node->_value) : nullptr;
   }
 
+  pointer lca(const key_type& n1, const key_type& n2) {
+    Node* node{_lca(_root, n1, n2)};
+    return node ? &node->_value : nullptr;
+  }
+
   int height() { return _height(_root); }
 
   void walk_breadth_first(std::function<void(const key_type&, reference)> fn) {
@@ -621,5 +626,19 @@ private:
   }
 
   bool _is_red(Node* node) const { return node ? node->is_red() : false; }
+
+  Node* _lca(Node* root, const key_type& n1, const key_type& n2) {
+    if (!root) {
+      return nullptr;
+    }
+
+    if (root->_key > n1 && root->_key > n2) {
+      return _lca(root->_left, n1, n2);
+    } else if (root->_key < n1 && root->_key < n2) {
+      return _lca(root->_right, n1, n2);
+    } else {
+      return root;
+    }
+  }
 };
 } // namespace trees

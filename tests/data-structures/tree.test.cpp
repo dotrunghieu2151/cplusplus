@@ -45,7 +45,7 @@ TEST_F(ContainerTest, BSTCopy) {
 
 TEST_F(ContainerTest, BSTSearch) {
   helpers::Test target{64};
-  helpers::Test* result = _bst.search(target);
+  helpers::Test* result{_bst.search(target)};
   if (result) {
     EXPECT_EQ(*result, target);
   } else {
@@ -58,6 +58,11 @@ TEST_F(ContainerTest, BSTMin) { EXPECT_EQ(_bst.min()->num(), -24); }
 TEST_F(ContainerTest, BSTMax) { EXPECT_EQ(_bst.max()->num(), 64); }
 
 TEST_F(ContainerTest, BSTHeight) { EXPECT_EQ(_bst.height(), 3); }
+
+TEST_F(ContainerTest, BST_LCA) {
+  helpers::Test* result{_bst.lca(helpers::Test{12}, helpers::Test{64})};
+  EXPECT_EQ(result->num(), 25);
+}
 
 TEST_F(ContainerTest, BST_walk_breadth_first) {
   std::array treeAsArr{1, -24, 25, 0, 12, 64, -12};

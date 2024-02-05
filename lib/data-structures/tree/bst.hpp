@@ -119,6 +119,11 @@ public:
 
   bool is_binary_search_tree() { return _is_bst(_root, nullptr, nullptr); }
 
+  pointer lca(const_reference n1, const_reference n2) {
+    Node* node{_lca(_root, n1, n2)};
+    return node ? &node->value : nullptr;
+  }
+
   void swap(self& other) noexcept {
     using std::swap;
     swap(_root, other._root);
@@ -342,6 +347,20 @@ private:
       node->left = _push(node->left, std::move(ele));
     }
     return node;
+  }
+
+  Node* _lca(Node* root, const_reference n1, const_reference n2) {
+    if (!root) {
+      return nullptr;
+    }
+
+    if (root->value > n1 && root->value > n2) {
+      return _lca(root->left, n1, n2);
+    } else if (root->value < n1 && root->value < n2) {
+      return _lca(root->right, n1, n2);
+    } else {
+      return root;
+    }
   }
 };
 } // namespace trees

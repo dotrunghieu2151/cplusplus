@@ -36,6 +36,15 @@ Vector<T>::Vector(std::size_t capacity)
 }
 
 template <typename T>
+Vector<T>::Vector(std::size_t capacity, const T& value) : Vector(capacity) {
+  _size = capacity;
+
+  for (std::size_t index{}; index < _size; ++index) {
+    new (_elements + index) T{value};
+  }
+};
+
+template <typename T>
 Vector<T>::Vector(std::initializer_list<T> list) : Vector(list.size() + 2) {
   VECTOR_DEBUG_MS("Vector Ctor List");
 

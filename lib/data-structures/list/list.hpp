@@ -111,6 +111,9 @@ public:
     return get_node_at_index(index);
   };
 
+  T& back() { return get_node_at_index(_size - 1); }
+  T& front() { return get_node_at_index(0); }
+
   /* Iterators */
   class Iterator;
   class ReverseIterator;

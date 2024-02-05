@@ -180,3 +180,14 @@ target_link_libraries(fibonacci-heap.test
 )
 
 add_test(fibonacci-heap-gtest fibonacci-heap.test)
+
+
+add_executable(graph.test graph.test.cpp)
+
+target_link_libraries(graph.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(graph-gtest graph.test)

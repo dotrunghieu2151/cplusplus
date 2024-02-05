@@ -63,6 +63,11 @@ TEST_F(ContainerTest, BSTMax) { EXPECT_EQ(_bst.max()->num(), 64); }
 
 TEST_F(ContainerTest, BSTHeight) { EXPECT_EQ(_bst.height(), 2); }
 
+TEST_F(ContainerTest, AVL_LCA) {
+  helpers::Test* result{_bst.lca(0, -24)};
+  EXPECT_EQ(result->num(), -12);
+}
+
 TEST_F(ContainerTest, BST_walk_breadth_first) {
   std::array treeAsArr{1, -12, 25, -24, 0, 12, 64};
   std::size_t i{};

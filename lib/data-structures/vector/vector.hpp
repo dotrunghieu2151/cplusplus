@@ -42,6 +42,9 @@ private:
 public:
   /* Constructors */
   Vector(std::size_t capacity);
+
+  Vector(std::size_t capacity, const T& value);
+
   Vector(std::initializer_list<T> list);
 
   template <std::random_access_iterator Iter> Vector(Iter begin, Iter end);
