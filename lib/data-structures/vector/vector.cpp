@@ -379,3 +379,10 @@ void Vector<T>::insert(std::size_t insertIndex, Input first, Input last) {
     new (_elements + (insertIndex++)) T{*index};
   }
 }
+
+template <typename T> void Vector<T>::reverse() {
+  using std::swap;
+  for (std::size_t i{}, j{size() - 1}; i < j; ++i, --j) {
+    swap(_elements[i], _elements[j]);
+  }
+}

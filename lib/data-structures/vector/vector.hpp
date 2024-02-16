@@ -98,6 +98,8 @@ public:
   void erase(std::size_t index);
   void erase(std::size_t startIndex, std::size_t endIndex);
 
+  void reverse();
+
   /* Element access */
   T& operator[](std::size_t index) { return _elements[index]; };
   const T& operator[](std::size_t index) const { return _elements[index]; };
