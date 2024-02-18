@@ -153,31 +153,31 @@ TEST(Sudoku, BacktrackingEasy) {
   }
 }
 
-// TEST(Sudoku, BacktrackingHard) {
-//   Timer timer{};
-//   std::array<std::array<int, 9>, 9> grid{{{7, 0, 0, 0, 0, 3, 0, 0, 0},
-//                                           {0, 3, 4, 6, 0, 0, 0, 0, 1},
-//                                           {0, 0, 0, 0, 8, 0, 0, 2, 0},
-//                                           {0, 9, 0, 0, 0, 0, 0, 0, 0},
-//                                           {0, 1, 5, 3, 0, 0, 0, 0, 4},
-//                                           {0, 0, 0, 0, 0, 6, 3, 0, 0},
-//                                           {6, 0, 0, 0, 0, 0, 0, 0, 7},
-//                                           {0, 5, 7, 0, 0, 2, 0, 1, 0},
-//                                           {9, 0, 0, 5, 0, 0, 0, 0, 0}}};
-//   algorithms::sudoku::Sudoku sudokuSolver{};
-//   bool canSolve{sudokuSolver.solve(grid)};
-//   EXPECT_EQ(canSolve, true);
-//   std::cout << "Sudoku solved in: " << timer.elapsed() << "\n";
+TEST(Sudoku, BacktrackingHard) {
+  Timer timer{};
+  std::array<std::array<int, 9>, 9> grid{{{7, 0, 0, 0, 0, 3, 0, 0, 0},
+                                          {0, 3, 4, 6, 0, 0, 0, 0, 1},
+                                          {0, 0, 0, 0, 8, 0, 0, 2, 0},
+                                          {0, 9, 0, 0, 0, 0, 0, 0, 0},
+                                          {0, 1, 5, 3, 0, 0, 0, 0, 4},
+                                          {0, 0, 0, 0, 0, 6, 3, 0, 0},
+                                          {6, 0, 0, 0, 0, 0, 0, 0, 7},
+                                          {0, 5, 7, 0, 0, 2, 0, 1, 0},
+                                          {9, 0, 0, 5, 0, 0, 0, 0, 0}}};
+  algorithms::sudoku::Sudoku sudokuSolver{};
+  bool canSolve{sudokuSolver.solve(grid)};
+  EXPECT_EQ(canSolve, true);
+  std::cout << "Sudoku solved in: " << timer.elapsed() << "\n";
 
-//   for (auto& row : grid) {
-//     std::cout << "[";
-//     std::cout << row[0];
-//     for (int i{1}; i < (int)row.size(); ++i) {
-//       std::cout << ", " << row[(std::size_t)i];
-//     }
-//     std::cout << "]\n";
-//   }
-// }
+  for (auto& row : grid) {
+    std::cout << "[";
+    std::cout << row[0];
+    for (int i{1}; i < (int)row.size(); ++i) {
+      std::cout << ", " << row[(std::size_t)i];
+    }
+    std::cout << "]\n";
+  }
+}
 
 TEST(PathFinder, ShortestPath) {
   Timer timer{};
@@ -199,5 +199,36 @@ TEST(PathFinder, ShortestPath) {
       std::cout << " (" << result[i].second << "," << result[i].first << ")";
     }
     std::cout << "\n";
+  }
+}
+
+TEST(PathFinder, AllPaths) {
+  Timer timer{};
+  Vector<Vector<int>> maze{
+      {{1, 1, 1, 1}, {1, 1, 0, 1}, {0, 1, 0, 1}, {0, 1, 1, 2}}};
+  Vector<Vector<std::pair<int, int>>> result{
+      algorithms::path_finder::all_paths(maze, 0, 0, 2)};
+  std::cout << "Pathfinder all paths solved in: " << timer.elapsed() << "\n";
+  Vector<Vector<std::pair<int, int>>> paths{{
+      {{0, 0}, {1, 0}, {1, 1}, {1, 2}, {1, 3}, {2, 3}, {3, 3}},
+      {{0, 0}, {1, 0}, {2, 0}, {3, 0}, {3, 1}, {3, 2}, {3, 3}},
+      {{0, 0}, {0, 1}, {1, 1}, {1, 0}, {2, 0}, {3, 0}, {3, 1}, {3, 2}, {3, 3}},
+      {{0, 0}, {0, 1}, {1, 1}, {1, 2}, {1, 3}, {2, 3}, {3, 3}},
+  }};
+  EXPECT_EQ(result.size(), paths.size());
+  if (result.size()) {
+    for (std::size_t j{}; j < result.size(); ++j) {
+      std::cout << "["
+                << "(" << result[j][0].second << "," << result[j][0].first
+                << ")";
+      EXPECT_EQ(result[j][0], paths[j][0]);
+      for (std::size_t i{1}; i < result[j].size(); ++i) {
+        std::cout << " (" << result[j][i].second << "," << result[j][i].first
+                  << ")";
+        EXPECT_EQ(result[j][i], paths[j][i]);
+      }
+      std::cout << "]"
+                << "\n";
+    }
   }
 }

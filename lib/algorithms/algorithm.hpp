@@ -39,7 +39,8 @@ Vector<std::pair<int, int>> shortest_path(Vector<Vector<int>>& maze,
                                           int start_x, int start_y,
                                           int destination);
 
-Vector<Vector<std::pair<int, int>>> all_paths(Vector<Vector<int>>& maze);
+Vector<Vector<std::pair<int, int>>>
+all_paths(Vector<Vector<int>>& maze, int start_x, int start_y, int destination);
 } // namespace path_finder
 
 namespace sudoku {

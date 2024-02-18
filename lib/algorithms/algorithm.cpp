@@ -629,7 +629,80 @@ Vector<std::pair<int, int>> shortest_path(Maze& maze, int start_x, int start_y,
   return result;
 };
 
-Vector<Vector<std::pair<int, int>>> all_paths(Maze& maze);
+Vector<Vector<std::pair<int, int>>> all_paths(Maze& maze, int start_x,
+                                              int start_y, int destination) {
+  std::array<int, 4> dx{1, 0, 0, -1};
+  std::array<int, 4> dy{0, 1, -1, 0};
+
+  Vector<Vector<std::pair<int, int>>> result{};
+
+  for (std::size_t pathIndex{}; pathIndex < dx.size(); ++pathIndex) {
+    Stack<int> stack_x{};
+    Stack<int> stack_y{};
+    Vector<std::pair<int, int>> path{};
+    std::unordered_set<int*> visited{};
+    std::unordered_map<int*, int*> prev{};
+    path.push_back({start_x, start_y});
+    visited.insert(&maze[(std::size_t)start_y][(std::size_t)start_x]);
+
+    int new_x_start{start_x + dx[pathIndex]};
+    int new_y_start{start_y + dy[pathIndex]};
+
+    if (can_move(maze, new_x_start, new_y_start, maze[0].size(), maze.size(),
+                 destination)) {
+      bool pathExists{false};
+      stack_x.push(new_x_start);
+      stack_y.push(new_y_start);
+
+      while (stack_x.size()) {
+        pathExists = false;
+        int x{stack_x.pop()};
+        int y{stack_y.pop()};
+
+        int* cellPtr{&maze[(std::size_t)y][(std::size_t)x]};
+
+        if (visited.find(cellPtr) == visited.end()) {
+          visited.insert(cellPtr);
+          path.push_back({x, y});
+        }
+
+        for (std::size_t i{}; i < dx.size(); ++i) {
+          int new_x{x + dx[i]};
+          int new_y{y + dy[i]};
+
+          if (can_move(maze, new_x, new_y, maze[0].size(), maze.size(),
+                       destination) &&
+              visited.find(&maze[(std::size_t)new_y][(std::size_t)new_x]) ==
+                  visited.end()) {
+            if (maze[(std::size_t)new_y][(std::size_t)new_x] == destination) {
+              path.push_back({new_x, new_y});
+              result.push_back(path);
+              path.pop_back();
+              continue;
+            }
+
+            stack_x.push(new_x);
+            stack_y.push(new_y);
+            prev.insert_or_assign(&maze[(std::size_t)new_y][(std::size_t)new_x],
+                                  &maze[(std::size_t)y][(std::size_t)x]);
+            pathExists = true;
+          }
+        }
+        if (!pathExists && stack_y.size()) {
+          while (prev.at(&maze[(std::size_t)path.back().second]
+                              [(std::size_t)path.back().first]) !=
+                 prev.at(&maze[(std::size_t)stack_y.top()]
+                              [(std::size_t)stack_x.top()])) {
+            path.pop_back();
+          }
+          path.pop_back();
+        }
+      }
+    }
+  }
+
+  return result;
+};
 
 }; // namespace path_finder
 } // namespace algorithms
