@@ -48,6 +48,8 @@ public:
   Vector(std::initializer_list<T> list);
 
   template <std::random_access_iterator Iter> Vector(Iter begin, Iter end);
+
+  template <std::forward_iterator Iter> Vector(Iter begin, Iter end);
   ~Vector();
 
   Vector(const Vector<T>& copy);

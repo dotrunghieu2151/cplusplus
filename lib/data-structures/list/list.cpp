@@ -126,18 +126,23 @@ template <typename T> class List<T>::Iterator {
 public:
   using iterator_category = std::bidirectional_iterator_tag;
   using difference_type = std::ptrdiff_t;
+  using element_type = const T;
   using value_type = T;
   using pointer = T*;
   using reference = T&;
 
 private:
   Node* _current{nullptr};
-  Iterator() = default;
   Iterator(Node* p) : _current{p} {};
 
 public:
-  reference operator*() { return static_cast<DataNode*>(_current)->_data; };
-  pointer operator->() { return &static_cast<DataNode*>(_current)->_data; };
+  Iterator() = default;
+  reference operator*() const {
+    return static_cast<DataNode*>(_current)->_data;
+  };
+  pointer operator->() const {
+    return &static_cast<DataNode*>(_current)->_data;
+  };
 
   Iterator& operator++() {
     _current = _current->_next;

@@ -7,3 +7,24 @@ target_link_libraries(stack-application.test
 )
 
 add_test(stack-application-gtest stack-application.test)
+
+
+add_executable(backtracking.test backtracking.test.cpp)
+
+target_link_libraries(backtracking.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(sort-gtest sort.test)
+
+add_executable(sort.test sort.test.cpp)
+
+target_link_libraries(sort.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(sort-gtest sort.test)

@@ -2,11 +2,31 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <functional>
+#include <iterator>
 #include <stack.hpp>
 #include <string>
 #include <string_view>
 #include <unordered_set>
+#include <utility>
+
+// midpoint using Floyd's slow and fast pointer algo
+template <std::forward_iterator Iter> Iter midpoint(Iter start, Iter end) {
+  Iter slow{start};
+  Iter fast{start};
+
+  while (fast != end) {
+    ++fast;
+    if (fast == end) {
+      break;
+    }
+    ++fast;
+    ++slow;
+  }
+
+  return slow;
+}
 
 namespace algorithms {
 bool check_balanced_parenthesis(std::string_view str);
@@ -42,6 +62,155 @@ Vector<std::pair<int, int>> shortest_path(Vector<Vector<int>>& maze,
 Vector<Vector<std::pair<int, int>>>
 all_paths(Vector<Vector<int>>& maze, int start_x, int start_y, int destination);
 } // namespace path_finder
+
+namespace sort {
+
+template <typename Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void bubble_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
+  using std::swap;
+  const int distance{(int)std::distance(startIter, endIter)};
+  bool swapped{false};
+  for (int step{}; step < distance - 1; ++step) {
+    for (int i{}; i < distance - step - 1; ++i) {
+      auto& ele{*(startIter + i)};
+      auto& nextEle{*(startIter + i + 1)};
+      if (!compareFn(ele, nextEle)) {
+        swap(ele, nextEle);
+        swapped = true;
+      }
+    }
+    if (!swapped) {
+      return;
+    }
+  }
+}
+
+template <typename Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void selection_sort(Iter startIter, Iter endIter,
+                    Compare compareFn = Compare()) {
+  using std::swap;
+  const int distance{(int)std::distance(startIter, endIter)};
+  for (int step{}; step < distance - 1; ++step) {
+    int min{step};
+    for (int i{step + 1}; i < distance; ++i) {
+      auto& ele{*(startIter + i)};
+      auto& minEle{*(startIter + min)};
+      if (!compareFn(minEle, ele)) {
+        min = i;
+      }
+    }
+    swap(*(startIter + min), *(startIter + step));
+  }
+}
+
+template <typename Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void insertion_sort(Iter startIter, Iter endIter,
+                    Compare compareFn = Compare()) {
+  using std::swap;
+  const int distance{(int)std::distance(startIter, endIter)};
+  for (int i{1}; i < distance; ++i) {
+    int previous = i - 1;
+
+    while (previous >= 0 &&
+           compareFn(*(startIter + previous + 1), *(startIter + previous))) {
+      swap(*(startIter + previous), *(startIter + previous + 1));
+      --previous;
+    }
+  }
+}
+
+namespace {
+
+template <std::forward_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void _merge_sort(Iter startIter, Iter midIter, Iter endIter,
+                 Compare compareFn = Compare()) {
+  using std::swap;
+  // combine as well as base case
+
+  // duplicate 2 subarrays
+  Vector<typename Iter::value_type> subArr1(startIter, midIter);
+  Vector<typename Iter::value_type> subArr2(midIter, endIter);
+
+  // maintain 3 pointers
+  typename Vector<typename Iter::value_type>::Iterator i{subArr1.begin()};
+  typename Vector<typename Iter::value_type>::Iterator j{subArr2.begin()};
+  Iter k{startIter};
+
+  while (i != subArr1.end() && j != subArr2.end()) {
+    if (compareFn(*i, *j)) {
+      *k = std::move(*i);
+      ++i;
+    } else {
+      *k = std::move(*j);
+      ++j;
+    }
+    ++k;
+  }
+
+  if (i == subArr1.end()) {
+    while (j != subArr2.end()) {
+      *k = std::move(*j);
+      ++j;
+      ++k;
+    }
+  }
+
+  if (j == subArr2.end()) {
+    while (i != subArr1.end()) {
+      *k = std::move(*i);
+      ++i;
+      ++k;
+    }
+  }
+
+  return;
+}
+} // namespace
+
+template <std::contiguous_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void merge_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
+  // end condition
+  if (!(startIter != endIter)) {
+    return;
+  }
+
+  // divide
+  int count{(int)std::distance(startIter, endIter)};
+  Iter midIter{startIter + count / 2};
+  if (count > 1) {
+    // conquer
+    merge_sort(startIter, midIter, compareFn);
+    merge_sort(midIter, endIter, compareFn);
+    // combine
+    _merge_sort(startIter, midIter, endIter, compareFn);
+  }
+}
+
+template <std::forward_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void merge_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
+  // end condition
+  Iter tempStart{startIter};
+  if (!(tempStart != endIter)) {
+    return;
+  }
+
+  if (++tempStart != endIter) {
+    // divide
+    Iter midIter{midpoint(startIter, endIter)};
+    // conquer
+    merge_sort(startIter, midIter, compareFn);
+    merge_sort(midIter, endIter, compareFn);
+    // combine
+    _merge_sort(startIter, midIter, endIter, compareFn);
+  }
+}
+} // namespace sort
 
 namespace sudoku {
 

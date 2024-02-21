@@ -64,6 +64,15 @@ Vector<T>::Vector(Iter begin, Iter end)
   }
 }
 
+template <typename T>
+template <std::forward_iterator Iter>
+Vector<T>::Vector(Iter begin, Iter end) : Vector(5) {
+  VECTOR_DEBUG_MS("Vector Iterator Ctor");
+  for (auto i{begin}; i != end; ++i) {
+    push_back(*i);
+  }
+}
+
 template <typename T> Vector<T>::~Vector() {
   VECTOR_DEBUG_MS("Vector Dtor");
 
@@ -117,6 +126,7 @@ public:
   using iterator_category = std::contiguous_iterator_tag;
   using difference_type = std::ptrdiff_t;
   using value_type = T;
+  using element_type = const T;
   using pointer = T*;
   using reference = T&;
 
@@ -124,10 +134,11 @@ private:
   T* _current;
 
 public:
+  Iterator() = default;
   Iterator(T* p) : _current{p} {}
 
   reference operator*() const { return *_current; }
-  pointer operator->() { return _current; }
+  pointer operator->() const { return _current; }
 
   Iterator& operator++() {
     ++_current;
@@ -186,6 +197,16 @@ public:
   bool operator==(const Iterator& other) const {
     return _current == other._current;
   }
+
+  bool operator<(const Iterator& other) const {
+    return _current < other._current;
+  }
+
+  bool operator<=(const Iterator& other) const { return !(*this > other); }
+
+  bool operator>(const Iterator& other) const { return other < *this; }
+
+  bool operator>=(const Iterator& other) const { return !(*this < other); }
 
   bool operator!=(const Iterator& other) const {
     return _current != other._current;
