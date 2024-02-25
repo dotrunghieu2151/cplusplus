@@ -705,4 +705,73 @@ Vector<Vector<std::pair<int, int>>> all_paths(Maze& maze, int start_x,
 };
 
 }; // namespace path_finder
+
+namespace sort {
+void counting_sort(Vector<int>& arr) {
+  int max{};
+  for (std::size_t i{}; i < arr.size(); ++i) {
+    max = std::max(max, arr[i]);
+  }
+
+  Vector<int> countArr((std::size_t)max + 1, 0);
+
+  // get count
+  for (std::size_t i{}; i < arr.size(); ++i) {
+    ++countArr[(std::size_t)arr[i]];
+  }
+
+  // get culminative sum of count
+  for (std::size_t i{1}; i < countArr.size(); ++i) {
+    countArr[i] += countArr[i - 1];
+  }
+
+  Vector<int> duplicate{arr};
+
+  for (int i{(int)duplicate.size() - 1}; i >= 0; --i) {
+    int culminativeCount{countArr[(std::size_t)duplicate[(std::size_t)i]]};
+    int sortedIndex{culminativeCount - 1};
+    arr[(std::size_t)sortedIndex] = duplicate[(std::size_t)(i)];
+    --countArr[(std::size_t)duplicate[(std::size_t)i]];
+  }
+}
+
+namespace {
+void counting_sort(Vector<int>& arr, int place) {
+  std::array<int, 10> countArr{};
+
+  // cal count
+  for (std::size_t i{}; i < arr.size(); ++i) {
+    std::size_t index{(std::size_t)((arr[i] / place) % 10)};
+    ++countArr[index];
+  }
+
+  // cal culminative sum of countArr
+  for (std::size_t i{1}; i < countArr.size(); ++i) {
+    countArr[i] += countArr[i - 1];
+  }
+
+  // sort by mapping count with index
+  Vector<int> duplicate{arr};
+
+  for (std::size_t i{}; i < duplicate.size(); ++i) {
+    std::size_t index{(std::size_t)((duplicate[i] / place) % 10)};
+    std::size_t sortedIndex{(std::size_t)(countArr[index] - 1)};
+    arr[sortedIndex] = duplicate[i];
+    --countArr[index];
+  }
+  return;
+}
+} // namespace
+
+void radix_sort(Vector<int>& arr) {
+  int max{};
+  for (std::size_t i{}; i < arr.size(); ++i) {
+    max = std::max(max, arr[i]);
+  }
+
+  for (int place{1}; max / place > 0; place *= 10) {
+    counting_sort(arr, place);
+  }
+}
+} // namespace sort
 } // namespace algorithms

@@ -41,7 +41,7 @@ private:
 
 public:
   /* Constructors */
-  Vector(std::size_t capacity);
+  Vector(std::size_t capacity = 2);
 
   Vector(std::size_t capacity, const T& value);
 

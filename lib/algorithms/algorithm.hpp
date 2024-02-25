@@ -10,6 +10,7 @@
 #include <string_view>
 #include <unordered_set>
 #include <utility>
+#include <vector.hpp>
 
 // midpoint using Floyd's slow and fast pointer algo
 template <std::forward_iterator Iter> Iter midpoint(Iter start, Iter end) {
@@ -65,7 +66,7 @@ all_paths(Vector<Vector<int>>& maze, int start_x, int start_y, int destination);
 
 namespace sort {
 
-template <typename Iter,
+template <std::random_access_iterator Iter,
           typename Compare = std::less_equal<typename Iter::value_type>>
 void bubble_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
   using std::swap;
@@ -86,7 +87,7 @@ void bubble_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
   }
 }
 
-template <typename Iter,
+template <std::random_access_iterator Iter,
           typename Compare = std::less_equal<typename Iter::value_type>>
 void selection_sort(Iter startIter, Iter endIter,
                     Compare compareFn = Compare()) {
@@ -105,19 +106,17 @@ void selection_sort(Iter startIter, Iter endIter,
   }
 }
 
-template <typename Iter,
+template <std::random_access_iterator Iter,
           typename Compare = std::less_equal<typename Iter::value_type>>
 void insertion_sort(Iter startIter, Iter endIter,
                     Compare compareFn = Compare()) {
   using std::swap;
   const int distance{(int)std::distance(startIter, endIter)};
   for (int i{1}; i < distance; ++i) {
-    int previous = i - 1;
-
-    while (previous >= 0 &&
-           compareFn(*(startIter + previous + 1), *(startIter + previous))) {
-      swap(*(startIter + previous), *(startIter + previous + 1));
-      --previous;
+    for (int j{i};
+         j >= 1 && !compareFn(*(startIter + (j - 1)), *(startIter + j));
+         j -= 1) {
+      swap(*(startIter + (j - 1)), *(startIter + j));
     }
   }
 }
@@ -169,9 +168,36 @@ void _merge_sort(Iter startIter, Iter midIter, Iter endIter,
 
   return;
 }
+
+template <std::random_access_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+Iter _partition(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
+  using std::swap;
+  // set last index as pivot. We can apply random pivot index by swapping that
+  // index with the end -1, and pass in this function
+  Iter pivotIter{endIter - 1};
+
+  Iter i{compareFn(*startIter, *pivotIter) ? startIter + 1 : startIter};
+
+  while (++startIter != endIter) {
+    if (startIter == pivotIter) {
+      continue;
+    }
+
+    if (compareFn(*startIter, *pivotIter)) {
+      swap(*startIter, *i);
+      if (*startIter == *pivotIter) {
+        pivotIter = startIter;
+      }
+      ++i;
+    }
+  }
+  swap(*i, *pivotIter);
+  return i;
+}
 } // namespace
 
-template <std::contiguous_iterator Iter,
+template <std::random_access_iterator Iter,
           typename Compare = std::less_equal<typename Iter::value_type>>
 void merge_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
   // end condition
@@ -210,6 +236,149 @@ void merge_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
     _merge_sort(startIter, midIter, endIter, compareFn);
   }
 }
+
+template <std::random_access_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void quicksort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
+  // end condition
+  if (!(startIter != endIter)) {
+    return;
+  }
+
+  int count{(int)std::distance(startIter, endIter)};
+  if (count <= 1) {
+    return;
+  }
+  // divide
+  Iter partitionIter{_partition(startIter, endIter, compareFn)};
+
+  // conquer
+  quicksort(startIter, partitionIter, compareFn);
+  quicksort(partitionIter + 1, endIter, compareFn);
+}
+
+// sort without any comparison
+// for small size int (no negative int)
+// Time: O(n + k)
+// Space: O(max)
+void counting_sort(Vector<int>& arr);
+
+void radix_sort(Vector<int>& arr);
+
+template <std::random_access_iterator Iter>
+  requires std::integral<typename Iter::value_type> ||
+           std::floating_point<typename Iter::value_type>
+void bucket_sort(Iter start, Iter end) {
+  // dividing elements into buckets
+  // just a simlpe algo for putting items into bucket
+  // set 10 bucket, and add elements based on their value
+  constexpr int bucketCount{10};
+  typename Iter::value_type max{};
+  for (Iter i{start}; i != end; ++i) {
+    max = std::max(max, *i);
+  }
+  double interval = max / 10.0;
+
+  std::array<Vector<typename Iter::value_type>, bucketCount> buckets{};
+
+  // put items into bucket
+  for (Iter i{start}; i != end; ++i) {
+    double quotient = (*i) / interval;
+    typename Iter::value_type dividend = (int)quotient * interval;
+    std::size_t index = dividend == *i && quotient > 0
+                            ? (std::size_t)(quotient)-1
+                            : (std::size_t)quotient;
+    buckets[index].push_back(*i);
+  }
+
+  // sort individual bucket
+  for (std::size_t i{}; i < buckets.size(); ++i) {
+    quicksort(buckets[i].begin(), buckets[i].end(),
+              std::less_equal<typename Iter::value_type>());
+  }
+
+  // gather buckets
+  Iter k{start};
+  for (std::size_t i{}; i < buckets.size(); ++i) {
+    for (auto j : buckets[i]) {
+      *start = j;
+      ++start;
+    }
+  }
+  return;
+}
+
+template <std::random_access_iterator Iter,
+          typename CompareFn = std::less_equal<typename Iter::value_type>>
+void heapify(Iter start, Iter root, int size,
+             CompareFn compareFn = CompareFn()) {
+  using std::swap;
+  int parentIndex = std::distance(start, root);
+
+  int leftChildIndex{parentIndex * 2 + 1};
+  int rightChildIndex{leftChildIndex + 1};
+
+  int nextIndex{leftChildIndex};
+
+  if (leftChildIndex >= size) {
+    return;
+  }
+
+  if (rightChildIndex < size &&
+      compareFn(*(start + rightChildIndex), *(start + nextIndex))) {
+    nextIndex = rightChildIndex;
+  }
+
+  if (compareFn(*(start + nextIndex), *(start + parentIndex))) {
+    swap(*(start + nextIndex), *(start + parentIndex));
+    return heapify(start, start + nextIndex, size, compareFn);
+  }
+}
+
+template <std::random_access_iterator Iter,
+          typename CompareFn = std::less_equal<typename Iter::value_type>>
+void heap_sort(Iter start, Iter end, CompareFn compareFn = CompareFn()) {
+  using std::swap;
+  int distance = std::distance(start, end);
+  int lastNoneLeafNode{distance / 2 - 1};
+  std::function<bool(const typename Iter::value_type&,
+                     const typename Iter::value_type&)>
+      reverseCompare{[&compareFn](const typename Iter::value_type& v1,
+                                  const typename Iter::value_type& v2) {
+        return !compareFn(v1, v2);
+      }};
+  // heapify entire array
+  for (int i{lastNoneLeafNode}; i >= 0; --i) {
+    heapify(start, start + i, distance, reverseCompare);
+  }
+
+  // heapsort
+  for (int i{distance - 1}; i >= 0; --i) {
+    swap(*start, *(start + i));
+    heapify(start, start, i, reverseCompare);
+  }
+
+  return;
+}
+
+template <std::random_access_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void shell_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
+  using std::swap;
+  int distance = std::distance(startIter, endIter);
+
+  // sort for each interval N/2, N/4, N/8 .... until interval = 0
+  for (int interval{distance / 2}; interval > 0; interval /= 2) {
+    for (int i{interval}; i < distance; ++i) {
+      for (int j{i}; j >= interval && !compareFn(*(startIter + (j - interval)),
+                                                 *(startIter + j));
+           j -= interval) {
+        swap(*(startIter + (j - interval)), *(startIter + j));
+      }
+    }
+  }
+}
+
 } // namespace sort
 
 namespace sudoku {
