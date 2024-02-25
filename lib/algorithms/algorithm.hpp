@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <concepts>
 #include <functional>
 #include <iterator>
@@ -379,6 +380,61 @@ void shell_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
   }
 }
 
+namespace {
+template <std::random_access_iterator Iter>
+Iter _median_of_three(Iter a, Iter b, Iter c) {
+  if (*a > *b) {
+    if (*b > *c) {
+      return b;
+    } else if (*a > *c) {
+      return c;
+    } else {
+      return a;
+    }
+  } else {
+    if (*a > *c) {
+      return a;
+    } else if (*b > *c) {
+      return c;
+    } else {
+      return b;
+    }
+  }
+}
+
+template <std::random_access_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void _introsort(Iter startIter, Iter endIter, int maxDepth,
+                Compare compareFn = Compare()) {
+  using std::swap;
+  int size = std::distance(startIter, endIter);
+  if (size < 16) {
+    insertion_sort(startIter, endIter, compareFn);
+    return;
+  }
+
+  if (maxDepth == 0) {
+    heap_sort(startIter, endIter, compareFn);
+    return;
+  }
+
+  Iter pivot{
+      _median_of_three(startIter, startIter + (size / 2 - 1), endIter - 1)};
+  swap(*pivot, *(endIter - 1));
+  pivot = _partition(startIter, endIter, compareFn);
+
+  _introsort(startIter, pivot, maxDepth - 1, compareFn);
+  _introsort(pivot + 1, endIter, maxDepth - 1, compareFn);
+}
+} // namespace
+
+template <std::random_access_iterator Iter,
+          typename Compare = std::less_equal<typename Iter::value_type>>
+void introsort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
+  int maxDepth = 2 * std::log2(std::distance(startIter, endIter));
+  _introsort(startIter, endIter, maxDepth, compareFn);
+  return;
+}
 } // namespace sort
 
 namespace sudoku {

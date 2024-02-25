@@ -5,6 +5,7 @@
 #include <iostream>
 #include <list.hpp>
 #include <math.hpp>
+#include <random.hpp>
 #include <string>
 #include <string_view>
 #include <timer.hpp>
@@ -220,4 +221,39 @@ TEST(Sort, ShellSortMax) {
   for (std::size_t i{}; i < correctArr.size(); ++i) {
     EXPECT_EQ(arr[i], correctArr[i]);
   }
+}
+
+TEST(Sort, IntrosortMin) {
+  Vector<int> arr{6, 4, 4, 3, 5, 2, 0, 1};
+  Vector<int> correctArr{0, 1, 2, 3, 4, 4, 5, 6};
+  algorithms::sort::introsort(arr.begin(), arr.end());
+
+  for (std::size_t i{}; i < correctArr.size(); ++i) {
+    EXPECT_EQ(arr[i], correctArr[i]);
+  }
+}
+
+TEST(Sort, IntrosortMax) {
+  Vector<int> arr{4, 6, 3, 3, 5, 2, 0, 1};
+  Vector<int> correctArr{6, 5, 4, 3, 3, 2, 1, 0};
+  algorithms::sort::introsort(arr.begin(), arr.end(),
+                              std::greater_equal<int>());
+
+  for (std::size_t i{}; i < correctArr.size(); ++i) {
+    EXPECT_EQ(arr[i], correctArr[i]);
+  }
+}
+
+TEST(SortPerf, Introsort) {
+  Vector<int> arr1(1000000);
+  for (std::size_t i{}; i < 1000000; ++i) {
+    arr1.push_back(Random::uniformRand(0, 1000000));
+  }
+  Vector<int> arr2{arr1};
+  Timer timer{};
+  algorithms::sort::introsort(arr1.begin(), arr1.end());
+  std::cout << "Custom introsort runtime: " << timer.elapsed() << "\n";
+  timer.reset();
+  std::sort(arr2.begin(), arr2.end());
+  std::cout << "Std introsort runtime: " << timer.elapsed() << "\n";
 }

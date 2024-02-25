@@ -1,4 +1,3 @@
-#include <algorithm.hpp>
 #include <algorithm>
 #include <array>
 #include <gtest/gtest.h>

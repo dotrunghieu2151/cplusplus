@@ -1,4 +1,3 @@
-#include <algorithm.hpp>
 #include <array>
 #include <fibonacci-heap.hpp>
 #include <gtest/gtest.h>
