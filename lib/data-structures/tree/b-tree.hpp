@@ -39,14 +39,12 @@ public:
   class Node {
     friend BTree;
 
+  public:
     StaticCircularBuffer<Node*, maxChildren> _children{};
     StaticCircularBuffer<T, maxKey> _keys{};
     StaticCircularBuffer<Data, maxKey> _dataArr{};
 
-  private:
     Node() = default;
-
-  public:
     bool is_full() { return _keys.size() == maxKey; }
     bool has_minimum_key() { return _keys.size() == minKey; }
     bool has_minimum_children() { return _children.size() == minChildren; }

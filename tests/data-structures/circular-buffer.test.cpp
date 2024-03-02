@@ -1,3 +1,4 @@
+#include <array>
 #include <circular-buffer.hpp>
 #include <cstddef>
 #include <gtest/gtest.h>

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <graph.hpp>
+#include <iostream>
 #include <queue.hpp>
 #include <stack.hpp>
 #include <vector.hpp>
@@ -133,13 +134,13 @@ public:
     for (std::size_t i{v->_index + 1}; i < _vertices.size(); ++i) {
       --_vertices[i]._index;
     }
+    std::size_t index{v->_index};
+    _vertices.erase(index);
 
-    _vertices.erase(v->_index);
-
-    _edges.erase(v->_index);
+    _edges.erase(index);
 
     for (std::size_t i{}; i < _vertices.size(); ++i) {
-      _edges[i].erase(v->_index);
+      _edges[i].erase(index);
     }
   }
 

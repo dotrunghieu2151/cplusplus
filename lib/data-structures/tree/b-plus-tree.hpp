@@ -40,10 +40,9 @@ private:
   class Node {
     friend BPlusTree;
 
-  protected:
+  public:
     StaticCircularBuffer<T, maxKey> _keys{};
 
-  public:
     Node() = default;
     virtual ~Node() = default;
 
@@ -80,11 +79,10 @@ private:
     friend BPlusTree;
     using allocator = typename Allocator::template rebind<NodeLeaf>::other;
 
-  private:
+  public:
     StaticCircularBuffer<Data, maxKey> _dataArr{};
     NodeLeaf* _next{nullptr};
 
-  public:
     NodeLeaf() = default;
 
     ~NodeLeaf() = default;
@@ -139,10 +137,9 @@ private:
 
     using allocator = typename Allocator::template rebind<NodeNonLeaf>::other;
 
-  private:
+  public:
     StaticCircularBuffer<Node*, maxChildren> _children{};
 
-  public:
     NodeNonLeaf() = default;
 
     bool is_leaf() override { return false; }

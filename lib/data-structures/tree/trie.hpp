@@ -237,10 +237,10 @@ private:
   class Node {
     friend class GeneralTrie;
 
+  public:
     std::map<key_type, Node*> _children{};
     bool _isEndOfWord{false};
 
-  public:
     Node() = default;
 
     ~Node() {}
@@ -254,14 +254,14 @@ private:
     bool is_leaf() { return _children.size() == 0; }
 
     void* operator new(std::size_t size) {
-      typename Allocator::rebind<Node>::other alloc{};
+      typename Allocator::template rebind<Node>::other alloc{};
       return static_cast<void*>(alloc.allocate(size));
     }
 
     void operator delete(void* p, std::size_t) {
       std::cout << "NODE DESTRUCTOR"
                 << "\n";
-      typename Allocator::rebind<Node>::other alloc{};
+      typename Allocator::template rebind<Node>::other alloc{};
       alloc.deallocate(static_cast<Node*>(p));
       return;
     }

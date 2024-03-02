@@ -184,13 +184,13 @@ private:
   class Node {
     friend class RBT;
 
+  public:
     Color _color{Color::red};
     Node* _left{nullptr};
     Node* _right{nullptr};
     key_type _key{};
     value_type _value{};
 
-  public:
     Node() = default;
 
     template <concepts::IsSameBase<key_type> Key,
@@ -222,12 +222,12 @@ private:
     }
 
     void* operator new(std::size_t size) {
-      typename Allocator::rebind<Node>::other alloc{};
+      typename Allocator::template rebind<Node>::other alloc{};
       return static_cast<void*>(alloc.allocate(size));
     }
 
     void operator delete(void* p, std::size_t) {
-      typename Allocator::rebind<Node>::other alloc{};
+      typename Allocator::template rebind<Node>::other alloc{};
       alloc.deallocate(static_cast<Node*>(p));
       return;
     }

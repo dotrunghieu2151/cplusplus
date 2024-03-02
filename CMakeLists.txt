@@ -7,7 +7,7 @@ project(bin)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
-set(CMAKE_BUILD_TYPE, Debug)
+# set(CMAKE_BUILD_TYPE, Debug)
 
 # install external package from git START
 include(FetchContent) 
@@ -41,19 +41,40 @@ include(googletest)
 
 add_compile_options(-Wall)
 add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
-add_compile_options(-Weffc++)
-add_compile_options(-Wextra)
-add_compile_options(-Wshadow)
-add_compile_options(-Wsign-conversion)
-add_compile_options(-fdiagnostics-color)
-add_compile_options(-gdwarf-4)
-# add_compile_options(-fcolor-diagnostics)
-# add_compile_options(-fansi-escape-codes)
-add_compile_options(-pedantic-errors)
-add_compile_options(-Werror)
-# add_compile_options(-stdlib=libc++)
 
-# add_compile_options(-Ofast)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  # using Clang
+  add_compile_options(-Weffc++)
+  add_compile_options(-Wextra)
+  add_compile_options(-Wshadow)
+  add_compile_options(-Wsign-conversion)
+  add_compile_options(-Werror)
+  add_compile_options(-pedantic-errors)
+  add_compile_options(-fcolor-diagnostics)
+  add_compile_options(-stdlib=libc++)
+
+  add_compile_options(-Ofast)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # using GCC
+  add_compile_options(-Weffc++)
+  add_compile_options(-Wextra)
+  add_compile_options(-Wshadow)
+  add_compile_options(-Wsign-conversion)
+  add_compile_options(-gdwarf-4)
+  add_compile_options(-fdiagnostics-color)
+  add_compile_options(-pedantic-errors)
+  add_compile_options(-Werror)
+
+  add_compile_options(-Ofast)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+  # using Intel C++
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  # using Visual Studio C++
+  add_compile_options(/diagnostics:color)
+  add_compile_options(/diagnostics:caret)
+  add_compile_options(/sdl)
+  add_compile_options(-Ox)
+endif()
 
 add_library(myLib "")
 add_subdirectory(lib)

@@ -311,9 +311,8 @@ void Vector<T>::emplace_back(Args&&... args) {
 template <typename T> void Vector<T>::erase(std::size_t index) {
   validateIndex(index);
   _elements[index].~T();
-  for (std::size_t i{index}; i < _size; ++i) {
+  for (std::size_t i{index}; i < _size - 1; ++i) {
     new (_elements + i) T{std::move(_elements[i + 1])};
-    _elements[i + 1].~T();
   }
   --_size;
 }
@@ -328,7 +327,6 @@ void Vector<T>::erase(std::size_t startIndex, std::size_t endIndex) {
   }
   for (std::size_t i{endIndex + 1}; i < _size; ++i) {
     new (_elements + i - distance) T{std::move(_elements[i])};
-    _elements[i].~T();
   }
   _size -= distance;
 }
