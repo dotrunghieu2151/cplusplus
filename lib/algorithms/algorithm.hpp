@@ -170,28 +170,57 @@ void _merge_sort(Iter startIter, Iter midIter, Iter endIter,
   return;
 }
 
+template <std::random_access_iterator Iter>
+Iter _median_of_three(Iter a, Iter b, Iter c) {
+  if (*a > *b) {
+    if (*b > *c) {
+      return b;
+    } else if (*a > *c) {
+      return c;
+    } else {
+      return a;
+    }
+  } else {
+    if (*a > *c) {
+      return a;
+    } else if (*b > *c) {
+      return c;
+    } else {
+      return b;
+    }
+  }
+}
+
 template <std::random_access_iterator Iter,
           typename Compare = std::less_equal<typename Iter::value_type>>
 Iter _partition(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
   using std::swap;
   // set last index as pivot. We can apply random pivot index by swapping that
   // index with the end -1, and pass in this function
-  Iter pivotIter{endIter - 1};
+  Iter pivotIter{_median_of_three(
+      startIter, startIter + std::distance(startIter, endIter - 1) / 2,
+      endIter - 1)};
 
-  Iter i{compareFn(*startIter, *pivotIter) ? startIter + 1 : startIter};
+  swap(*pivotIter, *(endIter - 1));
+  pivotIter = endIter - 1;
 
-  while (++startIter != endIter) {
-    if (startIter == pivotIter) {
-      continue;
-    }
+  Iter i{startIter};
+  Iter j{endIter - 2};
 
-    if (compareFn(*startIter, *pivotIter)) {
-      swap(*startIter, *i);
-      if (*startIter == *pivotIter) {
-        pivotIter = startIter;
-      }
+  while (true) {
+    while (compareFn(*i, *pivotIter) && i < endIter - 1) {
       ++i;
     }
+
+    while (!compareFn(*j, *pivotIter) && j > startIter) {
+      --j;
+    }
+
+    if (i >= j) {
+      break;
+    }
+
+    swap(*i, *j);
   }
   swap(*i, *pivotIter);
   return i;
@@ -381,27 +410,6 @@ void shell_sort(Iter startIter, Iter endIter, Compare compareFn = Compare()) {
 }
 
 namespace {
-template <std::random_access_iterator Iter>
-Iter _median_of_three(Iter a, Iter b, Iter c) {
-  if (*a > *b) {
-    if (*b > *c) {
-      return b;
-    } else if (*a > *c) {
-      return c;
-    } else {
-      return a;
-    }
-  } else {
-    if (*a > *c) {
-      return a;
-    } else if (*b > *c) {
-      return c;
-    } else {
-      return b;
-    }
-  }
-}
-
 template <std::random_access_iterator Iter,
           typename Compare = std::less_equal<typename Iter::value_type>>
 void _introsort(Iter startIter, Iter endIter, int maxDepth,
@@ -418,10 +426,7 @@ void _introsort(Iter startIter, Iter endIter, int maxDepth,
     return;
   }
 
-  Iter pivot{
-      _median_of_three(startIter, startIter + (size / 2 - 1), endIter - 1)};
-  swap(*pivot, *(endIter - 1));
-  pivot = _partition(startIter, endIter, compareFn);
+  Iter pivot{_partition(startIter, endIter, compareFn)};
 
   _introsort(startIter, pivot, maxDepth - 1, compareFn);
   _introsort(pivot + 1, endIter, maxDepth - 1, compareFn);
