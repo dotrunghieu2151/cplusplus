@@ -317,6 +317,16 @@ template <typename T> void Vector<T>::erase(std::size_t index) {
   --_size;
 }
 
+template <typename T> void Vector<T>::erase(Iterator iter) {
+  std::size_t index{(std::size_t)std::distance(begin(), iter)};
+  validateIndex(index);
+  _elements[index].~T();
+  for (std::size_t i{index}; i < _size - 1; ++i) {
+    new (_elements + i) T{std::move(_elements[i + 1])};
+  }
+  --_size;
+}
+
 template <typename T>
 void Vector<T>::erase(std::size_t startIndex, std::size_t endIndex) {
   validateIndex(startIndex);

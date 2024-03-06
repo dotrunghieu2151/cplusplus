@@ -53,7 +53,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   add_compile_options(-fcolor-diagnostics)
   add_compile_options(-stdlib=libc++)
 
-  add_compile_options(-Ofast)
+  # add_compile_options(-Ofast)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # using GCC
   add_compile_options(-Weffc++)
@@ -65,7 +65,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-pedantic-errors)
   add_compile_options(-Werror)
 
-  add_compile_options(-Ofast)
+  # add_compile_options(-Ofast)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   # using Intel C++
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -73,7 +73,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   add_compile_options(/diagnostics:color)
   add_compile_options(/diagnostics:caret)
   add_compile_options(/sdl)
-  add_compile_options(-Ox)
+  # add_compile_options(-Ox)
 endif()
 
 add_library(myLib "")

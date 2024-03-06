@@ -98,6 +98,7 @@ public:
   template <concepts::IsIterator Input>
   void insert(std::size_t insertIndex, Input first, Input last);
   void erase(std::size_t index);
+  void erase(Iterator iter);
   void erase(std::size_t startIndex, std::size_t endIndex);
 
   void reverse();

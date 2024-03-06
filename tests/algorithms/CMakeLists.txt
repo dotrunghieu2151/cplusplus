@@ -28,3 +28,14 @@ target_link_libraries(sort.test
 )
 
 add_test(sort-gtest sort.test)
+
+
+add_executable(load-balancer.test load-balancer.test.cpp)
+
+target_link_libraries(load-balancer.test
+  PRIVATE 
+    GTest::gtest_main
+    myLib
+)
+
+add_test(load-balancer-gtest load-balancer.test)
