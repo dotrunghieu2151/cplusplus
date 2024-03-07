@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <random.hpp>
+#include <set>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -136,5 +137,44 @@ class LeastConnectionLB {
 // _servers we store last response time
 class LeastResponseTimeLB {};
 
-class ConsistentHashRing {};
+class ConsistentHashRing {
+  int _replicas{};
+  std::unordered_map<int, std::string> _ring{};
+  std::set<int> _sortedKeys{};
+  std::hash<std::string_view> _hasheFn{};
+
+  ConsistentHashRing(int duplicatesPerNode) : _replicas{duplicatesPerNode} {}
+
+  void add_server(const std::string& name) {
+    for (int i{}; i < _replicas; ++i) {
+      int hashed = _hasheFn(name + '_' + std::to_string(i));
+      _ring.insert({hashed, name});
+      _sortedKeys.insert(hashed);
+    }
+  }
+
+  void remove_server(const std::string& name) {
+    for (int i{}; i < _replicas; ++i) {
+      int hashed = _hasheFn(name + '_' + std::to_string(i));
+      _ring.erase(hashed);
+      _sortedKeys.erase(hashed);
+    }
+  }
+
+  std::string* get_server(const std::string& key) {
+    if (_ring.empty()) {
+      return nullptr;
+    }
+
+    int hashed = _hasheFn(key);
+
+    auto closedServerOnRing{_sortedKeys.lower_bound(hashed)};
+
+    if (closedServerOnRing == _sortedKeys.end()) {
+      closedServerOnRing = _sortedKeys.begin();
+    }
+
+    return &_ring.at(*closedServerOnRing);
+  }
+};
 } // namespace load_balancer
