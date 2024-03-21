@@ -1,6 +1,7 @@
 add_subdirectory(vector)
 add_subdirectory(list)
 add_subdirectory(stack)
+add_subdirectory(min-stack)
 add_subdirectory(array)
 add_subdirectory(simple-deque)
 add_subdirectory(queue)
