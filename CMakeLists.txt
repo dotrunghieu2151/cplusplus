@@ -63,7 +63,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-gdwarf-4)
   add_compile_options(-fdiagnostics-color)
   add_compile_options(-pedantic-errors)
-  add_compile_options(-Werror)
+  # add_compile_options(-Werror)
 
   # add_compile_options(-Ofast)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")

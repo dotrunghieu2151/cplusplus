@@ -188,7 +188,7 @@ TEST_F(ContainerTestDelete, GetAllStr) {
   Vector<std::string> vec{"aa"s,      "ab"s,     "abbcddef"s,
                           "abbcdef"s, "abcdef"s, "acdef"s};
   Vector<std::string> vec1{_trie.get_all_str()};
-  for (std::size_t i{}; i < vec.size(); ++i) {
+  for (int i{}; i < vec.size(); ++i) {
     EXPECT_EQ(vec[i], vec1[i]);
   }
 }
